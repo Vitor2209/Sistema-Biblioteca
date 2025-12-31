@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Biblioteca Offline</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-logo">📚</div>
+        <div class="brand-text">
+          <div class="brand-title">Biblioteca</div>
+          <div class="brand-sub">Painel Offline</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item is-active" data-nav="dashboard">📊 Dashboard</button>
+        <button class="nav-item" data-nav="books">📘 Livros</button>
+        <button class="nav-item" data-nav="people">👤 Pessoas</button>
+        <button class="nav-item" data-nav="loans">🔁 Empréstimos</button>
+        <button class="nav-item" data-nav="reports">📄 Relatórios</button>
+        <button class="nav-item" data-nav="settings">⚙️ Configurações</button>
+        <button class="nav-item admin-only" data-nav="users" style="display:none;">👥 Usuários</button>
+        <button class="nav-item" data-nav="logs">🧾 Logs</button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="pill"><span class="dot"></span>Offline</div>
+        <div class="small muted">Abra em <b>localhost:3000</b></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn" id="btnHamburger" aria-label="Menu">☰</button>
+          <div class="page-title">
+            <div class="h1" id="pageTitle">Dashboard</div>
+            <div class="muted small" id="pageSubtitle">Visão geral do sistema</div>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <button class="icon-btn" id="btnTheme" title="Tema">🌓</button>
+          <button class="icon-btn" id="btnOverdueTop" title="Atrasados">⏱</button>
+
+          <div class="user-chip" id="userChip">
+            <div class="avatar">A</div>
+            <div class="user-meta">
+              <div class="user-name" id="userName">admin</div>
+              <div class="muted small" id="userRole">admin</div>
+            </div>
+          </div>
+
+          <button id="btnLogout" class="btn danger">Sair</button>
+        </div>
+      </header>
+
+      <section class="content">
+        <!-- LOGIN -->
+        <section class="card auth" id="viewLogin">
+          <div class="auth-hero">
+            <div class="auth-icon">🔐</div>
+            <div>
+              <div class="auth-title">Login</div>
+              <div class="muted">Admin ou Bibliotecário</div>
+            </div>
+          </div>
+
+          <form id="loginForm" class="form">
+            <div class="grid2">
+              <label>Usuário
+                <input name="username" placeholder="admin ou bibliotecario" autocomplete="username" required />
+              </label>
+              <label>Senha
+                <input name="password" type="password" placeholder="admin123" autocomplete="current-password" required />
+              </label>
+            </div>
+
+            <button class="btn primary w100" type="submit">Entrar →</button>
+            <p class="hint">
+              Padrões: <b>admin/admin123</b> (admin) • <b>bibliotecario/staff123</b> (staff)
+            </p>
+          </form>
+        </section>
+
+        <!-- DASH -->
+        <section id="viewDash" style="display:none;">
+          <div class="kpis">
+            <div class="kpi"><div class="kpi-title">Livros (Total)</div><div class="kpi-value" id="kBooks">0</div></div>
+            <div class="kpi"><div class="kpi-title">Disponíveis</div><div class="kpi-value" id="kAvail">0</div></div>
+            <div class="kpi"><div class="kpi-title">Empréstimos Ativos</div><div class="kpi-value" id="kLoans">0</div></div>
+            <div class="kpi"><div class="kpi-title">Atrasados</div><div class="kpi-value" id="kOverdue">0</div></div>
+          </div>
+
+          <div class="grid2 gap16">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title">Gráfico do Estoque</div>
+                  <div class="muted small">Total x Disponível x Emprestado</div>
+                </div>
+                <button class="btn" id="btnPrintDash">🖨️ PDF</button>
+              </div>
+              <canvas id="chartBooks" height="160"></canvas>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title">Atalhos</div>
+                  <div class="muted small">Ações rápidas</div>
+                </div>
+              </div>
+
+              <div class="quick">
+                <button class="quick-btn" data-go="books">＋ Adicionar Livro</button>
+                <button class="quick-btn" data-go="people">＋ Cadastrar Pessoa</button>
+                <button class="quick-btn" id="btnOpenLoanModal">⇄ Novo Empréstimo</button>
+                <button class="quick-btn warn" id="btnOverdueDash">⏱ Ver Atrasados</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- BOOKS -->
+        <section class="panel" id="viewBooks" style="display:none;">
+          <div class="panel-head">
+            <div><div class="h2">Livros</div><div class="muted small">Cadastre, ajuste e remova.</div></div>
+            <div class="panel-actions">
+              <div class="search"><span>🔎</span><input id="qBooks" placeholder="Buscar por título ou autor..." /></div>
+              <button class="btn" id="btnReloadBooks">Atualizar</button>
+              <button class="btn" id="btnPrintBooks">🖨️ PDF</button>
+            </div>
+          </div>
+
+          <div class="grid2 gap16">
+            <form id="bookForm" class="card form">
+              <div class="card-title">Novo Livro</div>
+              <div class="grid2">
+                <label>Título <input name="title" required /></label>
+                <label>Autor <input name="author" /></label>
+                <label>Categoria <input name="category" /></label>
+                <label>Seção <input name="section" /></label>
+                <label>Prateleira <input name="shelf" placeholder="Prateleira 01" /></label>
+                <label>Quantidade total <input name="total_qty" type="number" min="0" value="1" /></label>
+              </div>
+              <button class="btn primary w100" type="submit">Adicionar Livro</button>
+              <p class="hint">Remoção só se nunca teve empréstimo.</p>
+            </form>
+
+            <div class="card">
+              <div class="card-title">Lista de Livros</div>
+              <div id="booksList" class="list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PEOPLE -->
+        <section class="panel" id="viewPeople" style="display:none;">
+          <div class="panel-head">
+            <div><div class="h2">Pessoas</div><div class="muted small">Cadastro e remoção segura.</div></div>
+            <div class="panel-actions">
+              <div class="search"><span>🔎</span><input id="qPeople" placeholder="Buscar pessoa..." /></div>
+              <button class="btn" id="btnReloadPeople">Atualizar</button>
+              <button class="btn" id="btnPrintPeople">🖨️ PDF</button>
+            </div>
+          </div>
+
+          <div class="grid2 gap16">
+            <form id="peopleForm" class="card form">
+              <div class="card-title">Nova Pessoa</div>
+              <div class="grid2">
+                <label>Nome <input name="name" required /></label>
+                <label>Telefone <input name="phone" /></label>
+                <label>Email <input name="email" /></label>
+              </div>
+              <button class="btn primary w100" type="submit">Cadastrar Pessoa</button>
+              <p class="hint">Remoção só se nunca teve empréstimo.</p>
+            </form>
+
+            <div class="card">
+              <div class="card-title">Lista de Pessoas</div>
+              <div id="peopleList" class="list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- LOANS -->
+        <section class="panel" id="viewLoans" style="display:none;">
+          <div class="panel-head">
+            <div><div class="h2">Empréstimos</div><div class="muted small">Devolução parcial/total + renovação.</div></div>
+            <div class="panel-actions">
+              <button class="btn primary" id="btnOpenLoanModal2">＋ Novo Empréstimo</button>
+              <div class="search"><span>🔎</span><input id="qLoans" placeholder="Buscar por nome..." /></div>
+              <button class="btn" id="btnReloadLoans">Atualizar</button>
+              <button class="btn warn" id="btnOverdue">Atrasados</button>
+              <button class="btn" id="btnPrintLoans">🖨️ PDF</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Lista de Empréstimos</div>
+            <div id="loansList" class="list"></div>
+          </div>
+        </section>
+
+        <!-- REPORTS -->
+        <section class="panel" id="viewReports" style="display:none;">
+          <div class="panel-head">
+            <div><div class="h2">Relatórios</div><div class="muted small">CSV + PDF.</div></div>
+            <div class="panel-actions">
+              <button class="btn" id="btnPrintReports">🖨️ PDF</button>
+            </div>
+          </div>
+
+          <div class="grid2 gap16">
+            <div class="card">
+              <div class="card-title">CSV (Excel)</div>
+              <div class="list">
+                <a class="btn w100" href="/api/reports/books.csv" target="_blank">⬇️ Livros</a>
+                <a class="btn w100" href="/api/reports/people.csv" target="_blank">⬇️ Pessoas</a>
+                <a class="btn w100" href="/api/reports/loans.csv" target="_blank">⬇️ Empréstimos</a>
+                <a class="btn w100 warn" href="/api/reports/overdue.csv" target="_blank">⬇️ Atrasados</a>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">PDF</div>
+              <div class="muted small">Use 🖨️ ou Ctrl+P → “Salvar como PDF”.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section class="panel" id="viewSettings" style="display:none;">
+          <div class="panel-head">
+            <div><div class="h2">Configurações</div><div class="muted small">Senha + backups.</div></div>
+          </div>
+
+          <div class="grid2 gap16">
+            <form id="pwdForm" class="card form">
+              <div class="card-title">Trocar minha senha</div>
+              <label>Senha atual <input name="current_password" type="password" required /></label>
+              <label>Nova senha (mín 6) <input name="new_password" type="password" required /></label>
+              <button class="btn primary w100" type="submit">Atualizar senha</button>
+            </form>
+
+            <div class="card form">
+              <div class="card-title">Backups</div>
+              <button class="btn w100" id="btnBackupNow" type="button">💾 Fazer backup agora (admin)</button>
+
+              <div class="inner" style="margin-top:12px;">
+                <div class="muted small" style="margin-bottom:10px;">Lista de backups (admin)</div>
+                <div id="backupList" class="list"></div>
+              </div>
+
+              <div class="inner" style="margin-top:12px;">
+                <div class="muted small" style="margin-bottom:10px;">
+                  Restore: salvará como <b>database.sqlite.restored</b> (depois renomeie).
+                </div>
+                <input id="restoreFile" type="file" accept=".sqlite,.db,.sqlite3" />
+                <button class="btn warn w100" id="btnRestore" type="button">Restaurar backup (admin)</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- USERS -->
+        <section class="panel" id="viewUsers" style="display:none;">
+          <div class="panel-head">
+            <div><div class="h2">Usuários</div><div class="muted small">Somente Admin.</div></div>
+            <button class="btn" id="btnReloadUsers">Atualizar</button>
+          </div>
+
+          <div class="grid2 gap16">
+            <form id="userCreateForm" class="card form">
+              <div class="card-title">Criar usuário</div>
+              <label>Username <input name="username" required /></label>
+              <label>Senha (mín 6) <input name="password" type="password" required /></label>
+              <label>Role
+                <select name="role">
+                  <option value="staff">staff (bibliotecário)</option>
+                  <option value="admin">admin</option>
+                </select>
+              </label>
+              <button class="btn primary w100" type="submit">Criar</button>
+              <p class="hint">Não é permitido deletar você mesmo.</p>
+            </form>
+
+            <div class="card">
+              <div class="card-title">Lista</div>
+              <div id="usersList" class="list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- LOGS -->
+        <section class="panel" id="viewLogs" style="display:none;">
+          <div class="panel-head">
+            <div><div class="h2">Logs</div><div class="muted small">Auditoria do sistema.</div></div>
+            <button class="btn" id="btnReloadLogs">Atualizar</button>
+          </div>
+          <div class="card">
+            <div id="logsList" class="list"></div>
+          </div>
+        </section>
+      </section>
+
+      <!-- Modals -->
+      <dialog class="modal" id="loanModal">
+        <form method="dialog" class="modal-box">
+          <div class="modal-head">
+            <div>
+              <div class="modal-title">Novo Empréstimo</div>
+              <div class="muted small">Selecione pessoa e livros</div>
+            </div>
+            <button class="icon-btn" value="cancel">✕</button>
+          </div>
+
+          <div class="grid2">
+            <label>Pessoa
+              <input id="personSearch" placeholder="Digite o nome..." autocomplete="off" />
+              <input type="hidden" id="personIdHidden" />
+              <div class="acbox" id="acPeople"></div>
+            </label>
+
+            <label>Prazo (YYYY-MM-DD HH:MM:SS)
+              <input id="loanDue" placeholder="2026-01-15 18:00:00" />
+            </label>
+          </div>
+
+          <div class="inner">
+            <div class="inner-head">
+              <div class="card-title">Itens</div>
+              <button class="btn" type="button" id="btnAddItem">+ adicionar</button>
+            </div>
+            <div id="loanItems"></div>
+          </div>
+
+          <label>Observação
+            <input id="loanNotes" placeholder="Ex: devolver em 7 dias" />
+          </label>
+
+          <div class="modal-actions">
+            <button class="btn" value="cancel">Cancelar</button>
+            <button class="btn primary" id="btnSubmitLoan" type="button">Registrar</button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog class="modal" id="renewModal">
+        <form method="dialog" class="modal-box">
+          <div class="modal-head">
+            <div>
+              <div class="modal-title">Renovar</div>
+              <div class="muted small">Nova data de devolução</div>
+            </div>
+            <button class="icon-btn" value="cancel">✕</button>
+          </div>
+
+          <input type="hidden" id="renewLoanId" />
+          <label>Novo prazo (YYYY-MM-DD HH:MM:SS)
+            <input id="renewDue" placeholder="2026-01-20 18:00:00" />
+          </label>
+
+          <div class="modal-actions">
+            <button class="btn" value="cancel">Cancelar</button>
+            <button class="btn primary" id="btnRenewConfirm" type="button">Salvar</button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog class="modal" id="returnItemModal">
+        <form method="dialog" class="modal-box">
+          <div class="modal-head">
+            <div>
+              <div class="modal-title">Devolver Item</div>
+              <div class="muted small" id="returnItemHint">Quantidade</div>
+            </div>
+            <button class="icon-btn" value="cancel">✕</button>
+          </div>
+
+          <input type="hidden" id="riLoanId" />
+          <input type="hidden" id="riItemId" />
+          <input type="hidden" id="riMax" />
+
+          <label>Quantidade
+            <input id="riQty" type="number" min="1" value="1" />
+          </label>
+
+          <div class="modal-actions">
+            <button class="btn" value="cancel">Cancelar</button>
+            <button class="btn primary" id="btnReturnItemConfirm" type="button">Devolver</button>
+          </div>
+        </form>
+      </dialog>
+
+      <div id="toast" class="toast"></div>
+      <div class="backdrop" id="backdrop"></div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

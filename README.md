@@ -1,52 +1,50 @@
 📚 Sistema de Biblioteca – Gerenciamento Offline
 
-Sistema completo para gerenciamento de bibliotecas, desenvolvido em Node.js, com foco em simplicidade, organização e uso offline.
+Sistema completo de gerenciamento de biblioteca desenvolvido em Node.js, focado em simplicidade, organização e funcionamento totalmente offline.
 Ideal para bibliotecas escolares, comunitárias ou projetos educacionais.
 
 🚀 Funcionalidades
-📘 Livros
+📘 Gestão de Livros
 
 Cadastro, edição e remoção de livros
 
-Controle de quantidade disponível
+Controle automático de quantidade disponível
 
-Busca rápida por título ou categoria
+Busca por título ou categoria
 
-👤 Pessoas
+👤 Gestão de Usuários
 
 Cadastro de leitores
 
-Validação de e-mail (não permite duplicados)
+Validação de e-mails (evita duplicações)
 
-Histórico de empréstimos
+Histórico completo de empréstimos
 
 🔄 Empréstimos
 
 Registro de empréstimos e devoluções
 
-Controle de quantidade disponível
+Controle automático de disponibilidade
 
-Histórico por pessoa
+Bloqueio de remoção quando há empréstimos ativos
 
-Bloqueio de remoção quando há vínculo ativo
-
-🛡️ Segurança
+🔐 Segurança
 
 Sistema de login
 
 Controle de acesso
 
-Proteção contra exclusão indevida
+Validações no backend
 
-Validação de dados no backend
+Proteção contra exclusões indevidas
 
 🖥️ Interface
 
-Interface simples e responsiva
+Interface simples e intuitiva
+
+Totalmente responsiva
 
 Funciona 100% offline
-
-Layout limpo e fácil de usar
 
 🛠️ Tecnologias Utilizadas
 
@@ -56,7 +54,11 @@ Express
 
 SQLite
 
-HTML / CSS / JavaScript
+HTML5
+
+CSS3
+
+JavaScript
 
 Git & GitHub
 
@@ -74,7 +76,7 @@ biblioteca-offline/
 ├── README.md
 └── .gitignore
 
-▶️ Como executar o projeto
+▶️ Como Executar o Projeto
 1️⃣ Instale as dependências
 npm install
 
@@ -84,33 +86,34 @@ npm start
 3️⃣ Acesse no navegador
 http://localhost:3000
 
-👤 Usuários Padrão
+👤 Usuário Padrão
 Usuário	Senha
 admin	admin123
 
-(Pode ser alterado no banco de dados)
+(Os dados podem ser alterados diretamente no banco de dados)
 
-📦 Observações Importantes
+📌 Observações Importantes
 
-O banco de dados é local (SQLite)
+O sistema utiliza SQLite, ideal para projetos locais e educacionais
 
-O projeto funciona offline
+Funciona offline, sem necessidade de internet
 
-Não subir node_modules nem arquivos .sqlite para o GitHub
 
-🚀 Próximas melhorias (ideias)
+🚀 Próximas Melhorias (Roadmap)
 
-Exportação em PDF / Excel
+📊 Relatórios em PDF ou Excel
 
-Controle de atrasos
+⏱️ Controle de atrasos e multas
 
-Sistema de permissões (admin / funcionário)
+👥 Níveis de acesso (admin / funcionário)
 
-Histórico detalhado por usuário
+🔐 Autenticação mais robusta
 
-Versão instalável (Electron)
+📱 Versão desktop com Electron
 
 👨‍💻 Autor
 
-Desenvolvido por Vitor Dutra Melo
-📧 Contato: vitordutra1125@gmail.com
+Vitor Dutra Melo
+Desenvolvedor Web | JavaScript | Node.js
+
+📌 Projeto desenvolvido com foco em aprendizado, prática real e evolução profissional.

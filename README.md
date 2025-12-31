@@ -1,138 +1,116 @@
-📚 Sistema de Biblioteca Offline
+📚 Sistema de Biblioteca – Gerenciamento Offline
 
-Sistema completo de gerenciamento de biblioteca desenvolvido em Node.js + SQLite, com interface moderna em HTML/CSS/JavaScript, funcionando totalmente offline.
-
-Ideal para bibliotecas comunitárias, escolas, igrejas ou projetos educacionais.
+Sistema completo para gerenciamento de bibliotecas, desenvolvido em Node.js, com foco em simplicidade, organização e uso offline.
+Ideal para bibliotecas escolares, comunitárias ou projetos educacionais.
 
 🚀 Funcionalidades
-📘 Gerenciamento de Livros
+📘 Livros
 
-Cadastro de livros (título, autor, categoria, prateleira)
+Cadastro, edição e remoção de livros
 
 Controle de quantidade disponível
 
-Remoção segura (bloqueada se houver histórico)
+Busca rápida por título ou categoria
 
-Busca instantânea
-
-👤 Gestão de Pessoas
+👤 Pessoas
 
 Cadastro de leitores
 
 Validação de e-mail (não permite duplicados)
 
-Histórico completo de empréstimos
+Histórico de empréstimos
 
-🔁 Empréstimos
+🔄 Empréstimos
 
-Empréstimo de múltiplos livros
+Registro de empréstimos e devoluções
 
-Devolução parcial ou total
+Controle de quantidade disponível
 
-Renovação de prazo
+Histórico por pessoa
 
-Controle de atrasos
+Bloqueio de remoção quando há vínculo ativo
 
-Histórico completo por pessoa
+🛡️ Segurança
 
-📊 Dashboard
+Sistema de login
 
-Total de livros
+Controle de acesso
 
-Livros disponíveis
+Proteção contra exclusão indevida
 
-Empréstimos ativos
+Validação de dados no backend
 
-Atrasados
+🖥️ Interface
 
-🔐 Usuários & Segurança
+Interface simples e responsiva
 
-Login com sessão
+Funciona 100% offline
 
-Perfis: admin e staff
+Layout limpo e fácil de usar
 
-Controle de permissões
+🛠️ Tecnologias Utilizadas
 
-Logs de ações (auditoria)
+Node.js
 
-💾 Backup e Restauração
+Express
 
-Backup manual do banco
+SQLite
 
-Restauração por upload
+HTML / CSS / JavaScript
 
-Ideal para uso offline
+Git & GitHub
 
-🧱 Tecnologias Utilizadas
-
-Node.js (backend)
-
-SQLite (banco de dados local)
-
-HTML / CSS / JavaScript puro
-
-Express (API)
-
-Sem frameworks pesados
-
-Totalmente offline
-
-▶️ Como Rodar o Projeto
-1. Instale as dependências
-npm install
-
-2. Inicie o sistema
-npm start
-
-3. Acesse no navegador
-http://localhost:3000
-
-🔐 Usuários padrão
-Usuário	Senha	Perfil
-admin	admin123	Administrador
-bibliotecario	staff123	Funcionário
 📂 Estrutura do Projeto
 biblioteca-offline/
 │
 ├── public/
-│   ├── app.js         # Lógica do front-end
-│   ├── styles.css     # Estilos
-│   └── index.html     # Interface principal
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
 │
-├── db.js              # Banco de dados SQLite
-├── server.js          # Backend (API)
+├── db.js
+├── server.js
 ├── package.json
-├── backups/           # Backups automáticos
-└── README.md
+├── README.md
+└── .gitignore
 
-🔒 Regras Importantes
+▶️ Como executar o projeto
+1️⃣ Instale as dependências
+npm install
 
-Não é possível apagar pessoas que tenham histórico de empréstimo
+2️⃣ Inicie o servidor
+npm start
 
-Emails são únicos (não permite duplicados)
+3️⃣ Acesse no navegador
+http://localhost:3000
 
-O sistema funciona totalmente offline
+👤 Usuários Padrão
+Usuário	Senha
+admin	admin123
 
-Todas as ações importantes são registradas
+(Pode ser alterado no banco de dados)
 
-💡 Próximas melhorias (planejadas)
+📦 Observações Importantes
 
-📱 Versão mobile otimizada (PWA)
+O banco de dados é local (SQLite)
 
-📊 Relatórios em PDF
+O projeto funciona offline
 
-📦 Importação/exportação de dados
+Não subir node_modules nem arquivos .sqlite para o GitHub
 
-🏷️ Código de barras / QR Code
+🚀 Próximas melhorias (ideias)
 
-📅 Notificações de atraso
+Exportação em PDF / Excel
 
-📌 Observação
+Controle de atrasos
 
-Para evitar erros:
+Sistema de permissões (admin / funcionário)
 
-Sempre acesse pelo http://localhost:3000
+Histórico detalhado por usuário
 
-Não abra o HTML direto no navegador
+Versão instalável (Electron)
 
-Sempre reinicie o servidor após alterações
+👨‍💻 Autor
+
+Desenvolvido por Vitor Dutra Melo
+📧 Contato: vitordutra1125@gmail.com

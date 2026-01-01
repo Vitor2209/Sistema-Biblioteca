@@ -152,6 +152,15 @@ function migrate() {
   if (!hasColumn("loan_items", "returned_qty")) {
     db.prepare(`ALTER TABLE loan_items ADD COLUMN returned_qty INTEGER NOT NULL DEFAULT 0`).run();
   }
+
+  // Soft delete support (people/books)
+  if (!hasColumn("people", "deleted_at")) {
+    db.prepare(`ALTER TABLE people ADD COLUMN deleted_at TEXT`).run();
+  }
+  if (!hasColumn("books", "deleted_at")) {
+    db.prepare(`ALTER TABLE books ADD COLUMN deleted_at TEXT`).run();
+  }
+
 }
 migrate();
 

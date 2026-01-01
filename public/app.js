@@ -1,994 +1,880 @@
-// Biblioteca Offline - Front (SPA) - Vanilla JS
-// IMPORTANT: Prefer abrir em http://localhost:3000 (mesma porta do Node)
-// Se você abrir em outra porta (Live Server), cookies de sessão podem não funcionar.
-
-const API_BASE = (location.port && location.port !== "3000") ? "http://localhost:3000" : "";
-
-const $ = (s) => document.querySelector(s);
-const $$ = (s) => Array.from(document.querySelectorAll(s));
-
-function toast(msg, kind = "info") {
-  const el = $("#toast");
-  if (!el) return alert(msg);
-  el.textContent = msg;
-  el.classList.add("show");
-  setTimeout(() => el.classList.remove("show"), 2300);
-}
-
-async function api(path, opts = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
-    ...opts,
+// ========= API helper (mesma origem: http://localhost:3000) =========
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    credentials: "same-origin",
+    ...options,
   });
-  let data = null;
-  try { data = await res.json(); } catch { /* ignore */ }
+
+  if (res.status === 401) throw new Error("NOT_AUTHENTICATED");
+
   if (!res.ok) {
-    const err = data?.error || `HTTP_${res.status}`;
-    const details = data?.details ? ` (${data.details})` : "";
-    throw new Error(`${err}${details}`);
+    let msg = "Erro na API";
+    try {
+      const j = await res.json();
+      msg = j?.error || msg;
+    } catch {}
+    throw new Error(msg);
   }
-  return data;
+
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
-async function apiForm(path, formData, opts = {}) {
-  const res = await fetch(`${API_BASE}${path}`, { method: "POST", body: formData, ...opts });
-  let data = null;
-  try { data = await res.json(); } catch { /* ignore */ }
-  if (!res.ok) {
-    const err = data?.error || `HTTP_${res.status}`;
-    throw new Error(err);
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+
+// ===== Modal helper (sem libs) =====
+const Modal = (() => {
+  const errElId = "modalError";
+
+  const backdrop = () => document.getElementById("appModal");
+  const titleEl = () => document.getElementById("modalTitle");
+  const subEl = () => document.getElementById("modalSubtitle");
+  const bodyEl = () => document.getElementById("modalBody");
+
+  function open({ title, subtitle, contentHTML, confirmText = "Salvar", cancelText = "Cancelar", onConfirm }) {
+    titleEl().textContent = title || "Modal";
+    subEl().textContent = subtitle || "";
+    bodyEl().innerHTML = contentHTML + `<div id="${errElId}" class="form-error"></div>`;
+
+    document.getElementById("modalConfirm").textContent = confirmText;
+    document.getElementById("modalCancel").textContent = cancelText;
+
+    const bd = backdrop();
+    bd.classList.add("open");
+    bd.setAttribute("aria-hidden", "false");
+
+    setTimeout(() => {
+      const first = bodyEl().querySelector("input, select, textarea, button");
+      if (first) first.focus();
+    }, 0);
+
+    return new Promise((resolve) => {
+      const setError = (msg) => {
+        const e = document.getElementById(errElId);
+        if (e) e.textContent = msg || "";
+      };
+
+      const close = (result) => {
+        bd.classList.remove("open");
+        bd.setAttribute("aria-hidden", "true");
+        bd.onclick = null;
+        window.onkeydown = null;
+        resolve(result);
+      };
+
+      const cancel = () => close(false);
+
+      const confirm = async () => {
+        try {
+          setError("");
+          const result = await onConfirm?.({ close, setError });
+          close(result ?? true);
+        } catch (e) {
+          setError(e?.message || "Erro ao salvar.");
+        }
+      };
+
+      document.getElementById("modalClose").onclick = cancel;
+      document.getElementById("modalCancel").onclick = cancel;
+      document.getElementById("modalConfirm").onclick = confirm;
+
+      bd.onclick = (ev) => {
+        if (ev.target === bd) cancel();
+      };
+
+      window.onkeydown = (ev) => {
+        if (ev.key === "Escape") cancel();
+      };
+    });
   }
-  return data;
+
+  return { open };
+})();
+
+
+function formatDate(dateString) {
+  if (!dateString) return "-";
+  const d = new Date(String(dateString).replace(" ", "T"));
+  return isNaN(d.getTime()) ? "-" : d.toLocaleDateString("pt-BR");
 }
 
-
-function debounce(fn, ms = 250) {
-  let t = null;
-  return (...args) => {
-    clearTimeout(t);
-    t = setTimeout(() => fn(...args), ms);
-  };
+function showLogin(show) {
+  const overlay = $("#loginOverlay");
+  if (!overlay) return;
+  overlay.style.display = show ? "flex" : "none";
 }
 
-/* ========= Theme ========= */
-function applyTheme(t) {
-  document.documentElement.setAttribute("data-theme", t);
-  localStorage.setItem("theme", t);
+function setUserUI(user) {
+  const el = $("#userName");
+  if (!el) return;
+  el.textContent = user ? `Bem-vindo, ${user.username}!` : "Bem-vindo!";
 }
-applyTheme(localStorage.getItem("theme") || "dark");
-$("#btnTheme")?.addEventListener("click", () => {
-  const cur = document.documentElement.getAttribute("data-theme") || "dark";
-  applyTheme(cur === "dark" ? "light" : "dark");
-});
 
-/* ========= Sidebar (mobile) ========= */
-const sidebar = $("#sidebar");
-const backdrop = $("#backdrop");
-function openSidebar() {
-  sidebar?.classList.add("is-open");
-  backdrop?.classList.add("is-open");
+function setActiveNav(route) {
+  $$(".sidebar-nav .nav-item").forEach((a) => a.classList.remove("active"));
+  const link = $(`.sidebar-nav .nav-item[data-route="${route}"]`);
+  if (link) link.classList.add("active");
 }
-function closeSidebar() {
-  sidebar?.classList.remove("is-open");
-  backdrop?.classList.remove("is-open");
+
+function showView(route) {
+  $$(".view").forEach((v) => v.classList.remove("active"));
+  const view = $(`#view-${route}`);
+  if (view) view.classList.add("active");
+  setActiveNav(route);
 }
-$("#btnHamburger")?.addEventListener("click", () => {
-  if (sidebar?.classList.contains("is-open")) closeSidebar();
-  else openSidebar();
-});
-backdrop?.addEventListener("click", closeSidebar);
 
-/* ========= Views ========= */
-const views = {
-  login: $("#viewLogin"),
-  dashboard: $("#viewDash"),
-  books: $("#viewBooks"),
-  people: $("#viewPeople"),
-  loans: $("#viewLoans"),
-  reports: $("#viewReports"),
-  settings: $("#viewSettings"),
-  users: $("#viewUsers"),
-  logs: $("#viewLogs"),
-};
+// ========= Dashboard =========
+function sumLoanedBooks(activeLoans) {
+  let total = 0;
+  for (const loan of activeLoans || []) {
+    for (const it of loan.items || []) {
+      total += Math.max(0, (Number(it.qty) || 0) - (Number(it.returned_qty) || 0));
+    }
+  }
+  return total;
+}
 
-function showOnly(viewKey) {
-  Object.entries(views).forEach(([k, el]) => {
-    if (!el) return;
-    el.style.display = (k === viewKey) ? "" : "none";
+function buildMonthly(loans) {
+  const months = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    months.push({ key, month: d.toLocaleString("pt-BR", { month: "short" }), loaned: 0, returned: 0 });
+  }
+  const map = new Map(months.map((m) => [m.key, m]));
+  for (const l of loans || []) {
+    const loanKey = String(l.loan_date || "").slice(0, 7);
+    if (map.has(loanKey)) map.get(loanKey).loaned += 1;
+
+    if (l.return_date) {
+      const retKey = String(l.return_date).slice(0, 7);
+      if (map.has(retKey)) map.get(retKey).returned += 1;
+    }
+  }
+  return months.map((m) => ({ month: m.month.toUpperCase(), loaned: m.loaned, returned: m.returned }));
+}
+
+function renderChart(monthlyLoans) {
+  const container = $("#chartContainer");
+  if (!container) return;
+
+  if (!monthlyLoans || monthlyLoans.length === 0) {
+    container.innerHTML = '<p class="loading">Sem dados disponíveis</p>';
+    return;
+  }
+
+  const maxValue = Math.max(...monthlyLoans.flatMap((m) => [m.loaned, m.returned]), 1);
+  const scale = 180 / maxValue;
+
+  container.innerHTML = monthlyLoans
+    .map(
+      (m) => `
+    <div class="chart-month">
+      <div class="chart-bars">
+        <div class="bar loaned" style="height:${m.loaned * scale}px" title="Emprestados: ${m.loaned}"></div>
+        <div class="bar returned" style="height:${m.returned * scale}px" title="Devolvidos: ${m.returned}"></div>
+      </div>
+      <span class="month-label">${m.month}</span>
+    </div>
+  `
+    )
+    .join("");
+}
+
+async function loadDashboard() {
+  const [books, people, loansAll, loansActive, loansOverdue] = await Promise.all([
+    api("/api/books"),
+    api("/api/people"),
+    api("/api/loans"),
+    api("/api/loans?status=LOANED"),
+    api("/api/loans?overdue=1"),
+  ]);
+
+  const totalBooks = (books || []).reduce((s, b) => s + (Number(b.total_qty) || 0), 0);
+  const totalReaders = (people || []).length;
+  const booksLoaned = sumLoanedBooks(loansActive || []);
+  const booksOverdue = sumLoanedBooks(loansOverdue || []);
+
+  $("#totalBooks").textContent = totalBooks;
+  $("#totalReaders").textContent = totalReaders;
+  $("#booksLoaned").textContent = booksLoaned;
+  $("#booksOverdue").textContent = booksOverdue;
+
+  const tbodyLoans = $("#loansTableBody");
+  const recentLoans = (loansAll || []).slice(0, 4);
+  tbodyLoans.innerHTML = recentLoans.length
+    ? recentLoans
+        .map((l) => {
+          const firstTitle = l.items?.[0]?.title ? l.items[0].title : "-";
+          return `<tr><td>${l.person_name || "-"}</td><td>${firstTitle}</td><td>${formatDate(l.loan_date)}</td></tr>`;
+        })
+        .join("")
+    : '<tr><td colspan="3" class="loading">Nenhum empréstimo encontrado</td></tr>';
+
+  const tbodyReaders = $("#readersTableBody");
+  const recentPeople = (people || []).slice(0, 4);
+  tbodyReaders.innerHTML = recentPeople.length
+    ? recentPeople
+        .map((p) => `<tr><td class="reader-name">${p.name || "-"}</td><td>${p.email || "-"}</td></tr>`)
+        .join("")
+    : '<tr><td colspan="2" class="loading">Nenhum leitor encontrado</td></tr>';
+
+  renderChart(buildMonthly(loansAll || []));
+}
+
+// ========= Books =========
+function renderBooksTable(books) {
+  const tbody = $("#booksTableBody");
+  if (!tbody) return;
+
+  if (!books?.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="loading">Nenhum livro encontrado</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = books
+    .map(
+      (b) => `
+    <tr>
+      <td>${b.title || "-"}</td>
+      <td>${b.author || "-"}</td>
+      <td>${b.category || "-"}</td>
+      <td>${Number(b.available_qty ?? 0)}</td>
+      <td>${Number(b.total_qty ?? 0)}</td>
+      <td>
+        <button class="btn-outline js-adjust" data-id="${b.id}" data-delta="1">+1</button>
+        <button class="btn-outline js-adjust" data-id="${b.id}" data-delta="-1">-1</button>
+        <button class="btn-outline js-delete-book" data-id="${b.id}">Excluir</button>
+      </td>
+    </tr>
+  `
+    )
+    .join("");
+}
+
+async function loadBooks() {
+  const q = $("#booksSearch")?.value?.trim() || "";
+  const books = await api(`/api/books${q ? `?q=${encodeURIComponent(q)}` : ""}`);
+  renderBooksTable(books);
+}
+
+async function addBook() {
+  await Modal.open({
+    title: "Adicionar livro",
+    subtitle: "Preencha os dados abaixo.",
+    confirmText: "Cadastrar",
+    contentHTML: `
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Título *</label>
+          <input id="mTitle" placeholder="Ex: Peter Pan" />
+        </div>
+        <div class="form-row">
+          <label>Autor</label>
+          <input id="mAuthor" placeholder="Ex: J.M. Barrie" />
+        </div>
+        <div class="form-row">
+          <label>Categoria</label>
+          <input id="mCategory" placeholder="Ex: Aventura" />
+        </div>
+        <div class="form-row">
+          <label>Quantidade total *</label>
+          <input id="mQty" type="number" min="1" value="1" />
+        </div>
+      </div>
+    `,
+    onConfirm: async ({ setError }) => {
+      const title = document.getElementById("mTitle").value.trim();
+      const author = document.getElementById("mAuthor").value.trim();
+      const category = document.getElementById("mCategory").value.trim();
+      const total_qty = Number(document.getElementById("mQty").value);
+
+      if (!title) return setError("Título é obrigatório.");
+      if (!total_qty || total_qty < 1) return setError("Quantidade precisa ser no mínimo 1.");
+
+      await api("/api/books", {
+        method: "POST",
+        body: JSON.stringify({ title, author, category, total_qty }),
+      });
+
+      await loadBooks();
+      await loadDashboard();
+    },
   });
 }
 
-const pageTitle = $("#pageTitle");
-const pageSubtitle = $("#pageSubtitle");
-
-const navMeta = {
-  dashboard: { title: "Dashboard", subtitle: "Visão geral do sistema" },
-  books: { title: "Livros", subtitle: "Cadastro, ajuste e remoção" },
-  people: { title: "Pessoas", subtitle: "Cadastro e remoção segura" },
-  loans: { title: "Empréstimos", subtitle: "Ativos, devoluções e atrasados" },
-  reports: { title: "Relatórios", subtitle: "Exportação CSV + PDF" },
-  settings: { title: "Configurações", subtitle: "Senha e backups" },
-  users: { title: "Usuários", subtitle: "Gerenciar admin e bibliotecários" },
-  logs: { title: "Logs", subtitle: "Auditoria do sistema" },
-};
-
-function setActiveNav(key) {
-  $$(".nav-item").forEach((b) => b.classList.toggle("is-active", b.dataset.nav === key));
-  pageTitle.textContent = navMeta[key]?.title || "Biblioteca";
-  pageSubtitle.textContent = navMeta[key]?.subtitle || "";
+async function adjustBook(id, delta) {
+  await api(`/api/books/${id}/adjust`, {
+    method: "POST",
+    body: JSON.stringify({ delta }),
+  });
+  await loadBooks();
 }
 
-/* ========= State ========= */
-let ME = null;
-let BOOKS = [];
-let PEOPLE = [];
-let LOANS = [];
-let OVERDUE_ONLY = false;
-
-/* ========= Auth ========= */
-async function refreshMe() {
-  const me = await api("/api/me");
-  ME = me.user;
-  if (!ME) return null;
-
-  $("#userName").textContent = ME.username;
-  $("#userRole").textContent = ME.role;
-  const av = ($("#userChip .avatar") || $(".avatar"));
-  if (av) av.textContent = (ME.username?.[0] || "U").toUpperCase();
-
-  $$(".admin-only").forEach((el) => (el.style.display = (ME.role === "admin") ? "" : "none"));
-  return ME;
+async function deleteBook(id) {
+  if (!confirm("Tem certeza que deseja excluir este livro? (Só funciona se não houver histórico de empréstimos)")) return;
+  await api(`/api/books/${id}`, { method: "DELETE" });
+  await loadBooks();
 }
 
-$("#btnLogout")?.addEventListener("click", async () => {
+// ========= Readers =========
+function renderReadersTable(people) {
+  const tbody = $("#readersFullTableBody");
+  if (!tbody) return;
+
+  if (!people?.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="loading">Nenhum leitor encontrado</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = people
+    .map((p) => {
+      const safeName = String(p.name || "").replace(/"/g, "&quot;");
+      return `
+        <tr>
+          <td>${p.name || "-"}</td>
+          <td>${p.email || "-"}</td>
+          <td>${p.phone || "-"}</td>
+          <td>
+            <button class="btn-outline js-delete-reader" data-id="${p.id}" data-name="${safeName}">Excluir</button>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+async function loadReaders() {
+  const q = $("#readersSearch")?.value?.trim() || "";
+  const people = await api(`/api/people${q ? `?q=${encodeURIComponent(q)}` : ""}`);
+  renderReadersTable(people);
+}
+
+async function addReader() {
+  await Modal.open({
+    title: "Adicionar leitor",
+    subtitle: "Cadastre um novo leitor.",
+    confirmText: "Cadastrar",
+    contentHTML: `
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Nome *</label>
+          <input id="mName" placeholder="Ex: Simone Melo" />
+        </div>
+        <div class="form-row">
+          <label>Email</label>
+          <input id="mEmail" type="email" placeholder="ex@email.com" />
+        </div>
+        <div class="form-row">
+          <label>Telefone</label>
+          <input id="mPhone" placeholder="(opcional)" />
+        </div>
+      </div>
+    `,
+    onConfirm: async ({ setError }) => {
+      const name = document.getElementById("mName").value.trim();
+      const email = document.getElementById("mEmail").value.trim();
+      const phone = document.getElementById("mPhone").value.trim();
+
+      if (!name) return setError("Nome é obrigatório.");
+
+      await api("/api/people", {
+        method: "POST",
+        body: JSON.stringify({ name, email, phone }),
+      });
+
+      await loadReaders();
+      await loadDashboard();
+    },
+  });
+}
+
+
+async function deleteReader(id, name) {
+  if (!confirm(`Excluir leitor "${name || ""}"? (O histórico de empréstimos será mantido)`)) return;
+  await api(`/api/people/${id}`, { method: "DELETE" });
+  await loadReaders();
+  await loadDashboard();
+}
+
+// ========= Loans =========
+function renderLoansTable(loans) {
+  const tbody = $("#loansFullTableBody");
+  if (!tbody) return;
+
+  if (!loans?.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="loading">Nenhum empréstimo encontrado</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = loans
+    .map((l) => {
+      const items = (l.items || [])
+        .map((it) => `${it.title} x${it.qty}${it.returned_qty ? ` (dev: ${it.returned_qty})` : ""}`)
+        .join("<br/>");
+
+      const canReturn = l.status === "LOANED";
+      const actionBtn = canReturn
+        ? `<button class="btn-outline js-return-loan" data-id="${l.id}">Devolver</button>`
+        : `<span class="badge success">OK</span>`;
+
+      return `
+      <tr>
+        <td>${l.person_name || "-"}</td>
+        <td>${l.status || "-"}</td>
+        <td>${formatDate(l.loan_date)}</td>
+        <td>${formatDate(l.due_date)}</td>
+        <td>${items || "-"}</td>
+        <td>${actionBtn}</td>
+      </tr>
+    `;
+    })
+    .join("");
+}
+
+async function loadLoans() {
+  const q = $("#loansSearch")?.value?.trim() || "";
+  const status = $("#loansFilter")?.value || "";
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (status) params.set("status", status);
+
+  const url = `/api/loans${params.toString() ? `?${params.toString()}` : ""}`;
+  const loans = await api(url);
+  renderLoansTable(loans);
+}
+
+async function addLoan() {
+  const [people, books] = await Promise.all([api("/api/people"), api("/api/books")]);
+
+  if (!people?.length) return alert("Cadastre um leitor primeiro.");
+  if (!books?.length) return alert("Cadastre um livro primeiro.");
+
+  // Datalist (pesquisável)
+  const peopleOptions = people
+    .map((p) => `<option value="${p.name} (id:${p.id})"></option>`)
+    .join("");
+
+  const bookOptions = books
+    .map((b) => `<option value="${b.title} (id:${b.id}) — disp:${b.available_qty}"></option>`)
+    .join("");
+
+  await Modal.open({
+    title: "Novo empréstimo",
+    subtitle: "Pesquise e selecione leitor e livro.",
+    confirmText: "Registrar",
+    contentHTML: `
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Leitor *</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔎</span>
+            <input id="mPersonSearch" class="input-search" list="peopleDatalist" placeholder="Digite para buscar (ex: Simone)..." />
+          </div>
+          <datalist id="peopleDatalist">${peopleOptions}</datalist>
+          <small class="hint">Selecione um item da lista (tem que aparecer “(id:...)”).</small>
+        </div>
+
+        <div class="form-row">
+          <label>Livro *</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔎</span>
+            <input id="mBookSearch" class="input-search" list="booksDatalist" placeholder="Digite para buscar (ex: Peter Pan)..." />
+          </div>
+          <datalist id="booksDatalist">${bookOptions}</datalist>
+          <small class="hint">Selecione um item da lista (tem que aparecer “(id:...)”).</small>
+        </div>
+
+        <div class="form-row">
+          <label>Quantidade *</label>
+          <input id="mLoanQty" type="number" min="1" value="1" />
+        </div>
+
+        <div class="form-row">
+          <label>Vencimento (opcional)</label>
+          <input id="mDue" type="date" />
+        </div>
+      </div>
+    `,
+    onConfirm: async ({ setError }) => {
+      const personRaw = document.getElementById("mPersonSearch").value.trim();
+      const bookRaw = document.getElementById("mBookSearch").value.trim();
+      const qty = Number(document.getElementById("mLoanQty").value);
+      const due_date = document.getElementById("mDue").value || null;
+
+      const personMatch = personRaw.match(/\(id:(\d+)\)/i);
+      const bookMatch = bookRaw.match(/\(id:(\d+)\)/i);
+
+      const person_id = personMatch ? Number(personMatch[1]) : 0;
+      const book_id = bookMatch ? Number(bookMatch[1]) : 0;
+
+      if (!person_id) return setError("Selecione um leitor na lista (precisa conter “(id:...)”).");
+      if (!book_id) return setError("Selecione um livro na lista (precisa conter “(id:...)”).");
+      if (!qty || qty < 1) return setError("Quantidade precisa ser no mínimo 1.");
+
+      await api("/api/loans", {
+        method: "POST",
+        body: JSON.stringify({
+          person_id,
+          due_date,
+          items: [{ book_id, qty }],
+        }),
+      });
+
+      // Atualiza telas (inclui livros para refletir estoque)
+      await loadLoans();
+      await loadBooks();
+      await loadDashboard();
+    },
+  });
+}
+
+
+async function returnLoan(loanId) {
+  if (!confirm("Confirmar devolução de TODOS os itens deste empréstimo?")) return;
+  await api(`/api/loans/${loanId}/return`, { method: "POST" });
+  await loadLoans();
+  await loadDashboard();
+}
+
+
+// ========= Admin (Token Protected) =========
+function getAdminToken() {
+  return sessionStorage.getItem("adminToken") || "";
+}
+
+function setAdminToken(token) {
+  if (token) sessionStorage.setItem("adminToken", token);
+  else sessionStorage.removeItem("adminToken");
+}
+
+async function adminApi(path, options = {}) {
+  const token = getAdminToken();
+  return api(path, {
+    ...options,
+    headers: { ...(options.headers || {}), "x-admin-token": token },
+  });
+}
+
+async function promptAdminToken() {
+  await Modal.open({
+    title: "Token de Admin",
+    subtitle: "Apenas quem tem o token consegue gerenciar usuários.",
+    confirmText: "Salvar",
+    contentHTML: `
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Token *</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔑</span>
+            <input id="mAdminToken" class="input-search" placeholder="Cole o token aqui..." value="${getAdminToken().replace(/"/g,'&quot;')}" />
+          </div>
+          <small class="hint">Defina no backend com ADMIN_TOKEN no .env.</small>
+        </div>
+      </div>
+    `,
+    onConfirm: async ({ setError }) => {
+      const token = document.getElementById("mAdminToken").value.trim();
+      if (!token) return setError("Token é obrigatório.");
+      setAdminToken(token);
+
+      try {
+        await adminApi("/api/admin/ping");
+      } catch {
+        setAdminToken("");
+        return setError("Token inválido.");
+      }
+      await loadAdminUsers();
+    },
+  });
+}
+
+function renderAdminUsers(users) {
+  const tbody = document.getElementById("adminUsersBody");
+  const status = document.getElementById("adminStatus");
+  if (!tbody || !status) return;
+
+  if (!getAdminToken()) {
+    status.textContent = "Informe o token para acessar.";
+    tbody.innerHTML = "";
+    return;
+  }
+
+  status.textContent = "Acesso liberado. Você pode criar/editar usuários.";
+  if (!users?.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="loading">Nenhum usuário encontrado</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = users.map(u => `
+    <tr>
+      <td>${u.id}</td>
+      <td>${u.username}</td>
+      <td>${u.role}</td>
+      <td>${formatDate(u.created_at)}</td>
+      <td>
+        <button class="btn-outline js-admin-edit" data-id="${u.id}" data-username="${String(u.username).replace(/"/g,'&quot;')}" data-role="${u.role}">Editar</button>
+        <button class="btn-outline js-admin-del" data-id="${u.id}" data-username="${String(u.username).replace(/"/g,'&quot;')}">Excluir</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+async function loadAdminUsers() {
+  const status = document.getElementById("adminStatus");
+  if (status && !getAdminToken()) {
+    status.textContent = "Informe o token para acessar.";
+    renderAdminUsers([]);
+    return;
+  }
+
+  try {
+    const users = await adminApi("/api/admin/users");
+    renderAdminUsers(users);
+  } catch {
+    if (status) status.textContent = "Token inválido ou erro ao carregar usuários.";
+    renderAdminUsers([]);
+  }
+}
+
+async function adminNewUser() {
+  await Modal.open({
+    title: "Criar usuário",
+    subtitle: "Crie um novo login para o sistema.",
+    confirmText: "Criar",
+    contentHTML: `
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Usuário *</label>
+          <input id="mNewUsername" placeholder="ex: joao" />
+        </div>
+        <div class="form-row">
+          <label>Senha *</label>
+          <input id="mNewPassword" type="password" placeholder="mín. 4 caracteres" />
+        </div>
+        <div class="form-row">
+          <label>Role</label>
+          <select id="mNewRole">
+            <option value="admin">admin</option>
+            <option value="staff">staff</option>
+          </select>
+        </div>
+      </div>
+    `,
+    onConfirm: async ({ setError }) => {
+      const username = document.getElementById("mNewUsername").value.trim();
+      const password = document.getElementById("mNewPassword").value;
+      const role = document.getElementById("mNewRole").value;
+
+      if (!username) return setError("Usuário é obrigatório.");
+      if (!password || password.length < 4) return setError("Senha precisa ter no mínimo 4 caracteres.");
+
+      await adminApi("/api/admin/users", {
+        method: "POST",
+        body: JSON.stringify({ username, password, role }),
+      });
+
+      await loadAdminUsers();
+    },
+  });
+}
+
+async function adminEditUser(id, username, role) {
+  await Modal.open({
+    title: "Editar usuário",
+    subtitle: "Você pode trocar nome, role e/ou redefinir senha.",
+    confirmText: "Salvar",
+    contentHTML: `
+      <div class="form-grid">
+        <div class="form-row">
+          <label>Usuário</label>
+          <input id="mEditUsername" value="${String(username).replace(/"/g,'&quot;')}" />
+        </div>
+        <div class="form-row">
+          <label>Role</label>
+          <select id="mEditRole">
+            <option value="admin" ${role === "admin" ? "selected" : ""}>admin</option>
+            <option value="staff" ${role === "staff" ? "selected" : ""}>staff</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Nova senha (opcional)</label>
+          <input id="mEditPassword" type="password" placeholder="deixe vazio para não mudar" />
+        </div>
+      </div>
+    `,
+    onConfirm: async ({ setError }) => {
+      const newUsername = document.getElementById("mEditUsername").value.trim();
+      const newRole = document.getElementById("mEditRole").value;
+      const newPass = document.getElementById("mEditPassword").value;
+
+      if (!newUsername) return setError("Usuário não pode ficar vazio.");
+
+      await adminApi(`/api/admin/users/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ username: newUsername, role: newRole, password: newPass || undefined }),
+      });
+
+      await loadAdminUsers();
+    },
+  });
+}
+
+async function adminDeleteUser(id, username) {
+  if (!confirm(`Excluir o usuário "${username}"?`)) return;
+  await adminApi(`/api/admin/users/${id}`, { method: "DELETE" });
+  await loadAdminUsers();
+}
+
+// ========= Auth =========
+async function doLogin(username, password) {
+  await api("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+async function doLogout() {
   try {
     await api("/api/auth/logout", { method: "POST" });
-  } catch {}
-  ME = null;
-  toast("Saiu do sistema.");
-  boot();
-});
-
-$("#loginForm")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  const username = String(fd.get("username") || "").trim();
-  const password = String(fd.get("password") || "");
-  try {
-    await api("/api/auth/login", { method: "POST", body: JSON.stringify({ username, password }) });
-    await refreshMe();
-    toast("Login efetuado!");
-    navigate("dashboard");
-    await reloadAll();
-  } catch (err) {
-    toast(`Falha no login: ${err.message}`);
+  } finally {
+    location.reload();
   }
-});
-
-/* ========= Navigation ========= */
-function navigate(key) {
-  if (!ME) {
-    showOnly("login");
-    setActiveNav("dashboard");
-    return;
-  }
-
-  if (key === "users" && ME.role !== "admin") {
-    toast("Apenas admin pode acessar Usuários.");
-    return;
-  }
-
-  showOnly(key);
-  setActiveNav(key);
-  closeSidebar();
-
-  // lazy load per page
-  if (key === "books") renderBooks();
-  if (key === "people") renderPeople();
-  if (key === "loans") renderLoans();
-  if (key === "logs") renderLogs();
-  if (key === "users") renderUsers();
-  if (key === "settings") renderBackups();
-  if (key === "dashboard") renderDashboard();
 }
 
-$$(".nav-item").forEach((btn) => {
-  btn.addEventListener("click", () => navigate(btn.dataset.nav));
-});
-
-$$(".quick-btn[data-go]").forEach((btn) => {
-  btn.addEventListener("click", () => navigate(btn.dataset.go));
-});
-
-/* ========= Printing ========= */
-function doPrint() { window.print(); }
-$("#btnPrintDash")?.addEventListener("click", doPrint);
-$("#btnPrintBooks")?.addEventListener("click", doPrint);
-$("#btnPrintPeople")?.addEventListener("click", doPrint);
-$("#btnPrintLoans")?.addEventListener("click", doPrint);
-$("#btnPrintReports")?.addEventListener("click", doPrint);
-
-/* ========= Dashboard ========= */
-function setText(id, v) { const el = $(id); if (el) el.textContent = String(v); }
-
-function renderDashboard() {
-  const totalBooks = BOOKS.reduce((s, b) => s + (Number(b.total_qty) || 0), 0);
-  const avail = BOOKS.reduce((s, b) => s + (Number(b.available_qty) || 0), 0);
-  const activeLoans = LOANS.filter(l => l.status === "LOANED").length;
-  const overdue = LOANS.filter(l => l.status === "LOANED" && l.due_date && isOverdue(l.due_date)).length;
-
-  setText("#kBooks", totalBooks);
-  setText("#kAvail", avail);
-  setText("#kLoans", activeLoans);
-  setText("#kOverdue", overdue);
-
-  drawChart();
+async function checkAuth() {
+  const me = await api("/api/me");
+  if (!me?.user) throw new Error("NOT_AUTHENTICATED");
+  setUserUI(me.user);
 }
 
-function drawChart() {
-  const canvas = $("#chartBooks");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  const W = canvas.width = canvas.clientWidth * devicePixelRatio;
-  const H = canvas.height = 160 * devicePixelRatio;
-  ctx.clearRect(0, 0, W, H);
+// ========= Router =========
+async function onRouteChange() {
+  const route = (location.hash || "#/dashboard").replace("#/", "");
+  const safe = ["dashboard", "books", "readers", "loans", "admin"].includes(route) ? route : "dashboard";
+  showView(safe);
 
-  // compute values
-  const totalBooks = BOOKS.reduce((s, b) => s + (Number(b.total_qty) || 0), 0);
-  const avail = BOOKS.reduce((s, b) => s + (Number(b.available_qty) || 0), 0);
-  const borrowed = Math.max(0, totalBooks - avail);
-
-  const values = [totalBooks, avail, borrowed];
-  const labels = ["Total", "Disponível", "Emprestado"];
-  const maxV = Math.max(1, ...values);
-
-  const pad = 16 * devicePixelRatio;
-  const barW = (W - pad * 2) / 3.8;
-  const gap = barW / 2.4;
-  const baseY = H - pad * 1.4;
-
-  // bar colors (not specified as fixed per requirement; but this is UI, okay)
-  const bars = [
-    { v: values[0], c: "rgba(76,156,255,.65)" },
-    { v: values[1], c: "rgba(39,209,127,.60)" },
-    { v: values[2], c: "rgba(255,191,76,.62)" },
-  ];
-
-  ctx.font = `${12 * devicePixelRatio}px system-ui, sans-serif`;
-  ctx.textAlign = "center";
-  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--muted");
-
-  bars.forEach((b, i) => {
-    const x = pad + i * (barW + gap);
-    const h = (b.v / maxV) * (H - pad * 3);
-    const y = baseY - h;
-
-    // bar
-    ctx.fillStyle = b.c;
-    roundRect(ctx, x, y, barW, h, 12 * devicePixelRatio);
-    ctx.fill();
-
-    // value
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--text");
-    ctx.fillText(String(b.v), x + barW / 2, y - 6 * devicePixelRatio);
-
-    // label
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--muted");
-    ctx.fillText(labels[i], x + barW / 2, baseY + 18 * devicePixelRatio);
-  });
+  // Carrega dados da view ativa
+  if (safe === "dashboard") await loadDashboard();
+  if (safe === "books") await loadBooks();
+  if (safe === "readers") await loadReaders();
+  if (safe === "loans") await loadLoans();
+  if (safe === "admin") await loadAdminUsers();
 }
 
-function roundRect(ctx, x, y, w, h, r) {
-  const rr = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + rr, y);
-  ctx.arcTo(x + w, y, x + w, y + h, rr);
-  ctx.arcTo(x + w, y + h, x, y + h, rr);
-  ctx.arcTo(x, y + h, x, y, rr);
-  ctx.arcTo(x, y, x + w, y, rr);
-  ctx.closePath();
-}
+document.addEventListener("DOMContentLoaded", async () => {
+  // Login form
+  $("#loginForm")?.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    $("#loginError").textContent = "";
+    const username = $("#loginUser")?.value?.trim();
+    const password = $("#loginPass")?.value;
 
-/* ========= Books ========= */
-function esc(s) {
-  return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-}
-
-function renderBooks() {
-  const q = ($("#qBooks")?.value || "").trim().toLowerCase();
-  const list = $("#booksList");
-  if (!list) return;
-
-  const rows = BOOKS
-    .filter(b => !q || (b.title||"").toLowerCase().includes(q) || (b.author||"").toLowerCase().includes(q))
-    .slice(0, 400);
-
-  list.innerHTML = rows.map(b => {
-    const borrowed = Math.max(0, (Number(b.total_qty)||0) - (Number(b.available_qty)||0));
-    return `
-      <div class="item">
-        <div>
-          <b>${esc(b.title)}</b>
-          <div class="meta">
-            ${esc(b.author || "—")} • ${esc(b.category || "—")} • ${esc(b.section || "—")} • ${esc(b.shelf || "—")}
-          </div>
-          <div class="meta">
-            <span class="badge green">Disponível: ${Number(b.available_qty)||0}</span>
-            <span class="badge">Total: ${Number(b.total_qty)||0}</span>
-            <span class="badge red">Emprestado: ${borrowed}</span>
-          </div>
-        </div>
-        <div class="item-actions">
-          <button class="btn" data-adjust="${b.id}" data-delta="1">+1</button>
-          <button class="btn" data-adjust="${b.id}" data-delta="-1">-1</button>
-          <button class="btn danger" data-delbook="${b.id}">Remover</button>
-        </div>
-      </div>
-    `;
-  }).join("") || `<div class="muted small">Nenhum livro encontrado.</div>`;
-}
-
-$("#qBooks")?.addEventListener("input", renderBooks);
-$("#btnReloadBooks")?.addEventListener("click", async () => {
-  const q = ($("#qBooks")?.value || "").trim();
-  await loadBooks(q);
-  renderBooks();
-  toast("Livros atualizados.");
-});
-
-$("#bookForm")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  const body = {
-    title: fd.get("title"),
-    author: fd.get("author"),
-    category: fd.get("category"),
-    section: fd.get("section"),
-    shelf: fd.get("shelf"),
-    total_qty: Number(fd.get("total_qty") || 0),
-  };
-
-  try {
-    await api("/api/books", { method: "POST", body: JSON.stringify(body) });
-    e.target.reset();
-    await loadBooks();
-    renderBooks();
-    toast("Livro adicionado.");
-    renderDashboard();
-  } catch (err) {
-    toast(`Erro ao adicionar livro: ${err.message}`);
-  }
-});
-
-$("#booksList")?.addEventListener("click", async (e) => {
-  const adj = e.target.closest("[data-adjust]");
-  const del = e.target.closest("[data-delbook]");
-
-  if (adj) {
-    const id = adj.dataset.adjust;
-    const delta = Number(adj.dataset.delta || 0);
     try {
-      await api(`/api/books/${id}/adjust`, { method: "POST", body: JSON.stringify({ delta }) });
-      await loadBooks();
-      renderBooks();
-      renderDashboard();
-      toast("Estoque atualizado.");
-    } catch (err) {
-      toast(`Erro: ${err.message}`);
+      await doLogin(username, password);
+      showLogin(false);
+      await checkAuth();
+      await onRouteChange();
+    } catch {
+      $("#loginError").textContent = "Usuário ou senha inválidos (ou erro no servidor).";
     }
-  }
-
-  if (del) {
-    const id = del.dataset.delbook;
-    if (!confirm("Remover este livro? (Só funciona se nunca teve empréstimo)")) return;
-    try {
-      await api(`/api/books/${id}`, { method: "DELETE" });
-      await loadBooks();
-      renderBooks();
-      renderDashboard();
-      toast("Livro removido.");
-    } catch (err) {
-      toast(`Erro ao remover livro: ${err.message}`);
-    }
-  }
-});
-
-/* ========= People ========= */
-function renderPeople() {
-  const q = ($("#qPeople")?.value || "").trim().toLowerCase();
-  const list = $("#peopleList");
-  if (!list) return;
-
-  const rows = PEOPLE
-    .filter(p => !q || (p.name||"").toLowerCase().includes(q))
-    .slice(0, 400);
-
-  list.innerHTML = rows.map(p => `
-    <div class="item">
-      <div>
-        <b>${esc(p.name)}</b>
-        <div class="meta">${esc(p.phone || "—")} • ${esc(p.email || "—")}</div>
-        <div class="meta">Criado em: ${esc(p.created_at || "—")}</div>
-      </div>
-      <div class="item-actions">
-        <button class="btn danger" data-delperson="${p.id}">Remover</button>
-      </div>
-    </div>
-  `).join("") || `<div class="muted small">Nenhuma pessoa encontrada.</div>`;
-}
-
-$("#qPeople")?.addEventListener("input", renderPeople);
-$("#btnReloadPeople")?.addEventListener("click", async () => {
-  const q = ($("#qPeople")?.value || "").trim();
-  await loadPeople(q);
-  renderPeople();
-  toast("Pessoas atualizadas.");
-});
-
-$("#peopleForm")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  const body = { name: fd.get("name"), phone: fd.get("phone"), email: fd.get("email") };
-  try {
-    await api("/api/people", { method: "POST", body: JSON.stringify(body) });
-    e.target.reset();
-    await loadPeople();
-    renderPeople();
-    toast("Pessoa cadastrada.");
-  } catch (err) {
-    toast(`Erro ao cadastrar pessoa: ${err.message}`);
-  }
-});
-
-$("#peopleList")?.addEventListener("click", async (e) => {
-  const del = e.target.closest("[data-delperson]");
-  if (!del) return;
-
-  const id = del.dataset.delperson;
-  if (!confirm("Remover esta pessoa? (Só funciona se nunca teve empréstimo)")) return;
-
-  try {
-    await api(`/api/people/${id}`, { method: "DELETE" });
-    await loadPeople();
-    renderPeople();
-    toast("Pessoa removida.");
-  } catch (err) {
-    toast(`Erro ao remover pessoa: ${err.message}`);
-  }
-});
-
-/* ========= Loans ========= */
-function isOverdue(due) {
-  // due is "YYYY-MM-DD HH:MM:SS"
-  const iso = String(due).replace(" ", "T") + "Z";
-  const t = Date.parse(iso);
-  if (!Number.isFinite(t)) return false;
-  return t < Date.now();
-}
-
-function loanStatusBadge(loan) {
-  if (loan.status === "RETURNED") return `<span class="badge green">Devolvido</span>`;
-  if (loan.due_date && isOverdue(loan.due_date)) return `<span class="badge red">Atrasado</span>`;
-  return `<span class="badge">Ativo</span>`;
-}
-
-function renderLoans() {
-  const q = ($("#qLoans")?.value || "").trim().toLowerCase();
-  const list = $("#loansList");
-  if (!list) return;
-
-  const filtered = LOANS
-    .filter(l => !q || (l.person_name||"").toLowerCase().includes(q))
-    .filter(l => !OVERDUE_ONLY || (l.status === "LOANED" && l.due_date && isOverdue(l.due_date)))
-    .slice(0, 300);
-
-  list.innerHTML = filtered.map(l => {
-    const itemsHtml = (l.items || []).map(it => {
-      const remaining = (Number(it.qty)||0) - (Number(it.returned_qty)||0);
-      const canReturn = l.status === "LOANED" && remaining > 0;
-      return `
-        <div class="item" style="padding:10px;">
-          <div>
-            <b>${esc(it.title)}</b>
-            <div class="meta">${esc(it.author || "—")} • prateleira: ${esc(it.shelf || "—")}</div>
-            <div class="meta">
-              <span class="badge">Qtd: ${it.qty}</span>
-              <span class="badge green">Devolvido: ${it.returned_qty}</span>
-              <span class="badge red">Restante: ${remaining}</span>
-            </div>
-          </div>
-          <div class="item-actions">
-            ${canReturn ? `<button class="btn" data-returnitem="${it.id}" data-loan="${l.id}" data-max="${remaining}">Devolver</button>` : ``}
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    return `
-      <div class="item">
-        <div style="min-width:0;">
-          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-            <b style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 520px;">${esc(l.person_name)}</b>
-            ${loanStatusBadge(l)}
-            <span class="badge">ID: ${l.id}</span>
-          </div>
-          <div class="meta">
-            Por: ${esc(l.user_username)} •
-            Empréstimo: ${esc(l.loan_date || "—")} •
-            Prazo: ${esc(l.due_date || "—")} •
-            Retorno: ${esc(l.return_date || "—")}
-          </div>
-          ${l.notes ? `<div class="meta">Obs: ${esc(l.notes)}</div>` : ""}
-          <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
-            ${itemsHtml}
-          </div>
-        </div>
-        <div class="item-actions">
-          ${l.status === "LOANED" ? `<button class="btn" data-renew="${l.id}">Renovar</button>` : ""}
-          ${l.status === "LOANED" ? `<button class="btn warn" data-returnall="${l.id}">Devolver tudo</button>` : ""}
-        </div>
-      </div>
-    `;
-  }).join("") || `<div class="muted small">Nenhum empréstimo encontrado.</div>`;
-}
-
-$("#qLoans")?.addEventListener("input", renderLoans);
-$("#btnReloadLoans")?.addEventListener("click", async () => {
-  await loadLoans();
-  renderLoans();
-  renderDashboard();
-  toast("Empréstimos atualizados.");
-});
-
-function setOverdueMode(on) {
-  OVERDUE_ONLY = on;
-  toast(on ? "Mostrando apenas atrasados." : "Mostrando todos.");
-  renderLoans();
-}
-
-$("#btnOverdue")?.addEventListener("click", () => setOverdueMode(!OVERDUE_ONLY));
-$("#btnOverdueDash")?.addEventListener("click", () => { navigate("loans"); setOverdueMode(true); });
-$("#btnOverdueTop")?.addEventListener("click", () => { navigate("loans"); setOverdueMode(true); });
-
-/* ========= Loan Modal ========= */
-const loanModal = $("#loanModal");
-const renewModal = $("#renewModal");
-const returnItemModal = $("#returnItemModal");
-
-$("#btnOpenLoanModal")?.addEventListener("click", () => openLoanModal());
-$("#btnOpenLoanModal2")?.addEventListener("click", () => openLoanModal());
-
-async function openLoanModal() {
-  if (!loanModal) return;
-  $("#personSearch").value = "";
-  $("#personIdHidden").value = "";
-  $("#loanDue").value = "";
-  $("#loanNotes").value = "";
-  $("#loanItems").innerHTML = "";
-  // garante listas atualizadas para autocomplete
-  try {
-    await loadPeople("");
-    await loadBooks("");
-  } catch (e) {
-    // ignore
-  }
-  addLoanItemRow();
-  loanModal.showModal();
-}
-
-function addLoanItemRow() {
-  const wrap = $("#loanItems");
-  if (!wrap) return;
-
-  const id = `li_${Math.random().toString(16).slice(2)}`;
-  const row = document.createElement("div");
-  row.className = "item";
-  row.style.padding = "10px";
-  row.innerHTML = `
-    <div style="flex:1; min-width:0;">
-      <label style="margin:0;">Livro
-        <input data-booksearch placeholder="Digite título..." autocomplete="off" />
-        <input type="hidden" data-bookid />
-        <div class="acbox" data-acbooks></div>
-      </label>
-      <div class="meta" data-bookmeta>—</div>
-    </div>
-    <div style="width:140px;">
-      <label style="margin:0;">Qtd
-        <input data-qty type="number" min="1" value="1" />
-      </label>
-    </div>
-    <div class="item-actions" style="align-self:flex-end;">
-      <button class="btn danger" type="button" data-removeitem>Remover</button>
-    </div>
-  `;
-  wrap.appendChild(row);
-
-  const inp = row.querySelector("[data-booksearch]");
-  const hid = row.querySelector("[data-bookid]");
-  const ac = row.querySelector("[data-acbooks]");
-  const meta = row.querySelector("[data-bookmeta]");
-
-  function closeAc() { ac.classList.remove("show"); ac.innerHTML = ""; }
-  function openAc() { ac.classList.add("show"); }
-
-  inp.addEventListener("input", () => {
-    const q = inp.value.trim().toLowerCase();
-    if (!q) { closeAc(); return; }
-    const found = BOOKS
-      .filter(b => (b.title||"").toLowerCase().includes(q))
-      .slice(0, 6);
-    if (!found.length) { closeAc(); return; }
-    openAc();
-    ac.innerHTML = found.map(b => `
-      <div class="acitem" data-pick="${b.id}">
-        <div class="acmain">${esc(b.title)}</div>
-        <div class="acsub">Disponível: ${b.available_qty} • Prateleira: ${esc(b.shelf || "—")}</div>
-      </div>
-    `).join("");
   });
 
-  ac.addEventListener("click", (e) => {
-    const pick = e.target.closest("[data-pick]");
-    if (!pick) return;
-    const b = BOOKS.find(x => String(x.id) === String(pick.dataset.pick));
-    if (!b) return;
-    hid.value = b.id;
-    inp.value = b.title;
-    meta.textContent = `Autor: ${b.author || "—"} • Disponível: ${b.available_qty} • Prateleira: ${b.shelf || "—"}`;
-    closeAc();
+  // Logout buttons
+  $$(".btn-outline, .logout-btn").forEach((btn) => btn.addEventListener("click", doLogout));
+
+  // Nav clicks
+  $$(".sidebar-nav .nav-item").forEach((a) =>
+    a.addEventListener("click", (ev) => {
+      // deixa o hash mudar normalmente
+      ev.preventDefault();
+      const route = a.getAttribute("data-route");
+      location.hash = `#/${route}`;
+    })
+  );
+
+  
+  // Dashboard quick links
+  document.getElementById("btnGoLoans")?.addEventListener("click", () => {
+    location.hash = "#/loans";
+  });
+  document.getElementById("btnGoReaders")?.addEventListener("click", () => {
+    location.hash = "#/readers";
   });
 
-  document.addEventListener("click", (e) => {
-    if (!row.contains(e.target)) closeAc();
+  // Admin actions
+  document.getElementById("btnAdminToken")?.addEventListener("click", () => promptAdminToken().catch((e) => alert(e.message)));
+  document.getElementById("btnAdminRefresh")?.addEventListener("click", () => loadAdminUsers().catch(() => {}));
+  document.getElementById("btnAdminNewUser")?.addEventListener("click", () => adminNewUser().catch((e) => alert(e.message)));
+
+// Page actions
+  $("#booksSearch")?.addEventListener("input", () => loadBooks().catch(() => {}));
+  $("#btnAddBook")?.addEventListener("click", () => addBook().catch((e) => alert(e.message)));
+
+  $("#readersSearch")?.addEventListener("input", () => loadReaders().catch(() => {}));
+  $("#btnAddReader")?.addEventListener("click", () => addReader().catch((e) => alert(e.message)));
+
+  $("#loansSearch")?.addEventListener("input", () => loadLoans().catch(() => {}));
+  $("#loansFilter")?.addEventListener("change", () => loadLoans().catch(() => {}));
+  $("#btnAddLoan")?.addEventListener("click", () => addLoan().catch((e) => alert(e.message)));
+
+  // Delegation for books actions
+  document.addEventListener("click", (ev) => {
+    const t = ev.target;
+
+    // Livros
+    if (t?.classList?.contains("js-adjust")) {
+      const id = t.getAttribute("data-id");
+      const delta = Number(t.getAttribute("data-delta") || "0");
+      adjustBook(id, delta).catch((e) => alert(e.message));
+    }
+
+    if (t?.classList?.contains("js-delete-book")) {
+      const id = t.getAttribute("data-id");
+      deleteBook(id).catch((e) => alert(e.message));
+    }
+
+    // Leitores
+    if (t?.classList?.contains("js-delete-reader")) {
+      const id = t.getAttribute("data-id");
+      const name = t.getAttribute("data-name") || "";
+      deleteReader(id, name).catch((e) => alert(e.message));
+    }
+
+    // Empréstimos
+    if (t?.classList?.contains("js-return-loan")) {
+      const id = t.getAttribute("data-id");
+      returnLoan(id).catch((e) => alert(e.message));
+    }
+
+    // Admin
+    if (t?.classList?.contains("js-admin-edit")) {
+      const id = t.getAttribute("data-id");
+      const username = t.getAttribute("data-username") || "";
+      const role = t.getAttribute("data-role") || "admin";
+      adminEditUser(id, username, role).catch((e) => alert(e.message));
+    }
+
+    if (t?.classList?.contains("js-admin-del")) {
+      const id = t.getAttribute("data-id");
+      const username = t.getAttribute("data-username") || "";
+      adminDeleteUser(id, username).catch((e) => alert(e.message));
+    }
   });
 
-  row.querySelector("[data-removeitem]").addEventListener("click", () => row.remove());
-}
+  window.addEventListener("hashchange", () => onRouteChange().catch(() => {}));
 
-$("#btnAddItem")?.addEventListener("click", addLoanItemRow);
-
-/* People autocomplete (loan modal) */
-const acPeople = $("#acPeople");
-function closePeopleAc() { acPeople?.classList.remove("show"); if (acPeople) acPeople.innerHTML = ""; }
-function openPeopleAc() { acPeople?.classList.add("show"); }
-
-$("#personSearch")?.addEventListener("input", () => {
-  const q = $("#personSearch").value.trim().toLowerCase();
-  if (!q) { closePeopleAc(); return; }
-  const found = PEOPLE.filter(p => (p.name||"").toLowerCase().includes(q)).slice(0, 7);
-  if (!found.length) { closePeopleAc(); return; }
-
-  openPeopleAc();
-  acPeople.innerHTML = found.map(p => `
-    <div class="acitem" data-pick="${p.id}">
-      <div class="acmain">${esc(p.name)}</div>
-      <div class="acsub">${esc(p.phone || "—")} • ${esc(p.email || "—")}</div>
-    </div>
-  `).join("");
-});
-
-acPeople?.addEventListener("click", (e) => {
-  const pick = e.target.closest("[data-pick]");
-  if (!pick) return;
-  const p = PEOPLE.find(x => String(x.id) === String(pick.dataset.pick));
-  if (!p) return;
-  $("#personIdHidden").value = p.id;
-  $("#personSearch").value = p.name;
-  closePeopleAc();
-});
-
-document.addEventListener("click", (e) => {
-  if (!$("#personSearch")?.contains(e.target) && !acPeople?.contains(e.target)) closePeopleAc();
-});
-
-$("#btnSubmitLoan")?.addEventListener("click", async () => {
-  const person_id = Number($("#personIdHidden").value || 0);
-  const due_date = $("#loanDue").value.trim();
-  const notes = $("#loanNotes").value.trim();
-
-  const itemRows = Array.from($("#loanItems").children);
-  const items = [];
-  for (const r of itemRows) {
-    const book_id = Number(r.querySelector("[data-bookid]")?.value || 0);
-    const qty = Math.max(1, Number(r.querySelector("[data-qty]")?.value || 1));
-    if (book_id) items.push({ book_id, qty });
-  }
-
-  if (!person_id) return toast("Selecione uma pessoa.");
-  if (!items.length) return toast("Adicione pelo menos 1 livro.");
-
+  // Boot
   try {
-    await api("/api/loans", { method: "POST", body: JSON.stringify({ person_id, due_date: due_date || null, notes: notes || null, items }) });
-    loanModal.close();
-    toast("Empréstimo registrado!");
-    await loadBooks();
-    await loadLoans();
-    renderBooks();
-    renderLoans();
-    renderDashboard();
-  } catch (err) {
-    toast(`Erro ao registrar empréstimo: ${err.message}`);
-  }
-});
-
-/* Renew modal */
-$("#loansList")?.addEventListener("click", async (e) => {
-  const renew = e.target.closest("[data-renew]");
-  const retAll = e.target.closest("[data-returnall]");
-  const retItem = e.target.closest("[data-returnitem]");
-
-  if (renew) {
-    $("#renewLoanId").value = renew.dataset.renew;
-    $("#renewDue").value = "";
-    renewModal.showModal();
-  }
-
-  if (retAll) {
-    const id = retAll.dataset.returnall;
-    if (!confirm("Devolver todos os itens deste empréstimo?")) return;
-    try {
-      await api(`/api/loans/${id}/return`, { method: "POST" });
-      toast("Devolução total registrada.");
-      await loadBooks(); await loadLoans();
-      renderBooks(); renderLoans(); renderDashboard();
-    } catch (err) {
-      toast(`Erro: ${err.message}`);
-    }
-  }
-
-  if (retItem) {
-    const loanId = retItem.dataset.loan;
-    const itemId = retItem.dataset.returnitem;
-    const max = Number(retItem.dataset.max || 1);
-    $("#riLoanId").value = loanId;
-    $("#riItemId").value = itemId;
-    $("#riMax").value = String(max);
-    $("#riQty").value = "1";
-    $("#riQty").max = String(max);
-    $("#returnItemHint").textContent = `Máximo: ${max}`;
-    returnItemModal.showModal();
-  }
-});
-
-$("#btnRenewConfirm")?.addEventListener("click", async () => {
-  const id = $("#renewLoanId").value;
-  const due_date = $("#renewDue").value.trim();
-  if (!due_date) return toast("Informe a nova data.");
-  try {
-    await api(`/api/loans/${id}/renew`, { method: "POST", body: JSON.stringify({ due_date }) });
-    renewModal.close();
-    toast("Renovação salva.");
-    await loadLoans();
-    renderLoans();
-    renderDashboard();
-  } catch (err) {
-    toast(`Erro: ${err.message}`);
-  }
-});
-
-$("#btnReturnItemConfirm")?.addEventListener("click", async () => {
-  const loanId = $("#riLoanId").value;
-  const itemId = $("#riItemId").value;
-  const max = Number($("#riMax").value || 1);
-  const qty = Math.max(1, Math.min(max, Number($("#riQty").value || 1)));
-  try {
-    await api(`/api/loans/${loanId}/return-item`, { method: "POST", body: JSON.stringify({ loan_item_id: Number(itemId), qty }) });
-    returnItemModal.close();
-    toast("Item devolvido.");
-    await loadBooks(); await loadLoans();
-    renderBooks(); renderLoans(); renderDashboard();
-  } catch (err) {
-    toast(`Erro: ${err.message}`);
-  }
-});
-
-/* ========= Settings ========= */
-$("#pwdForm")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  const current_password = String(fd.get("current_password") || "");
-  const new_password = String(fd.get("new_password") || "");
-  try {
-    await api("/api/user/change-password", { method: "POST", body: JSON.stringify({ current_password, new_password }) });
-    e.target.reset();
-    toast("Senha atualizada.");
-  } catch (err) {
-    toast(`Erro: ${err.message}`);
-  }
-});
-
-$("#btnBackupNow")?.addEventListener("click", async () => {
-  try {
-    const r = await api("/api/backup/now", { method: "POST" });
-    toast(`Backup criado: ${r.file}`);
-    await renderBackups();
-  } catch (err) {
-    toast(`Erro: ${err.message}`);
-  }
-});
-
-$("#btnRestore")?.addEventListener("click", async () => {
-  const f = $("#restoreFile")?.files?.[0];
-  if (!f) return toast("Escolha um arquivo .sqlite");
-  if (!confirm("Tem certeza? O backup será enviado e salvo como database.sqlite.restored")) return;
-  try {
-    const fd = new FormData();
-    fd.append("file", f);
-    const r = await apiForm("/api/backup/restore", fd);
-    toast("Restore enviado.");
-    alert(r.message);
-  } catch (err) {
-    toast(`Erro: ${err.message}`);
-  }
-});
-
-async function renderBackups() {
-  const list = $("#backupList");
-  if (!list) return;
-  list.innerHTML = `<div class="muted small">Carregando...</div>`;
-  try {
-    const rows = await api("/api/backups");
-    list.innerHTML = rows.map(b => `
-      <a class="btn w100" href="${API_BASE}/api/backups/download/${encodeURIComponent(b.file)}" target="_blank">⬇️ ${esc(b.file)}</a>
-    `).join("") || `<div class="muted small">Sem backups.</div>`;
-  } catch (err) {
-    list.innerHTML = `<div class="muted small">Somente admin.</div>`;
-  }
-}
-
-/* ========= Users (admin) ========= */
-async function renderUsers() {
-  const list = $("#usersList");
-  if (!list) return;
-  list.innerHTML = `<div class="muted small">Carregando...</div>`;
-  try {
-    const rows = await api("/api/users");
-    list.innerHTML = rows.map(u => `
-      <div class="item">
-        <div>
-          <b>#${u.id} — ${esc(u.username)}</b>
-          <div class="meta">role: ${esc(u.role)} • ${esc(u.created_at || "—")}</div>
-        </div>
-        <div class="item-actions">
-          <button class="btn" data-role="${u.id}" data-v="staff">staff</button>
-          <button class="btn" data-role="${u.id}" data-v="admin">admin</button>
-          <button class="btn warn" data-reset="${u.id}">Reset senha</button>
-          <button class="btn danger" data-deluser="${u.id}">Remover</button>
-        </div>
-      </div>
-    `).join("") || `<div class="muted small">Sem usuários.</div>`;
-  } catch (err) {
-    list.innerHTML = `<div class="muted small">Somente admin.</div>`;
-  }
-}
-
-$("#btnReloadUsers")?.addEventListener("click", renderUsers);
-
-$("#userCreateForm")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  const body = {
-    username: String(fd.get("username") || "").trim(),
-    password: String(fd.get("password") || ""),
-    role: String(fd.get("role") || "staff"),
-  };
-  try {
-    await api("/api/users", { method: "POST", body: JSON.stringify(body) });
-    e.target.reset();
-    toast("Usuário criado.");
-    renderUsers();
-  } catch (err) {
-    toast(`Erro: ${err.message}`);
-  }
-});
-
-$("#usersList")?.addEventListener("click", async (e) => {
-  const roleBtn = e.target.closest("[data-role]");
-  const resetBtn = e.target.closest("[data-reset]");
-  const delBtn = e.target.closest("[data-deluser]");
-
-  try {
-    if (roleBtn) {
-      const id = roleBtn.dataset.role;
-      const role = roleBtn.dataset.v;
-      await api(`/api/users/${id}/set-role`, { method: "POST", body: JSON.stringify({ role }) });
-      toast("Role atualizado.");
-      return renderUsers();
-    }
-
-    if (resetBtn) {
-      const id = resetBtn.dataset.reset;
-      const np = prompt("Nova senha (mín 6):");
-      if (!np) return;
-      await api(`/api/users/${id}/reset-password`, { method: "POST", body: JSON.stringify({ new_password: np }) });
-      toast("Senha resetada.");
-      return renderUsers();
-    }
-
-    if (delBtn) {
-      const id = delBtn.dataset.deluser;
-      if (!confirm("Remover usuário? (Não pode ter histórico de empréstimo)")) return;
-      await api(`/api/users/${id}`, { method: "DELETE" });
-      toast("Usuário removido.");
-      return renderUsers();
-    }
-  } catch (err) {
-    toast(`Erro: ${err.message}`);
-  }
-});
-
-/* ========= Logs ========= */
-async function renderLogs() {
-  const list = $("#logsList");
-  if (!list) return;
-  list.innerHTML = `<div class="muted small">Carregando...</div>`;
-  try {
-    const rows = await api("/api/logs");
-    list.innerHTML = rows.map(r => `
-      <div class="item">
-        <div>
-          <b>${esc(r.action)} • ${esc(r.entity)}</b>
-          <div class="meta">${esc(r.created_at)} • usuário: ${esc(r.user_username || "—")} (${esc(r.user_role || "—")})</div>
-          ${r.details ? `<div class="meta">detalhes: ${esc(r.details)}</div>` : ""}
-        </div>
-        <div class="item-actions">
-          <span class="badge">#${r.id}</span>
-          ${r.entity_id ? `<span class="badge">entity_id: ${r.entity_id}</span>` : ""}
-        </div>
-      </div>
-    `).join("") || `<div class="muted small">Sem logs.</div>`;
-  } catch (err) {
-    list.innerHTML = `<div class="muted small">Erro: ${esc(err.message)}</div>`;
-  }
-}
-$("#btnReloadLogs")?.addEventListener("click", renderLogs);
-
-/* ========= Loaders ========= */
-async function loadBooks(q = "") {
-  const qs = q ? `?q=${encodeURIComponent(q)}` : "";
-  BOOKS = await api(`/api/books${qs}`);
-}
-async function loadPeople(q = "") {
-  const qs = q ? `?q=${encodeURIComponent(q)}` : "";
-  PEOPLE = await api(`/api/people${qs}`);
-}
-async function loadLoans() {
-  LOANS = await api("/api/loans");
-}
-
-async function reloadAll() {
-  await Promise.all([loadBooks(), loadPeople(), loadLoans()]);
-  renderDashboard();
-}
-
-/* ========= Boot ========= */
-async function boot() {
-  try {
-    await refreshMe();
+    await checkAuth();
+    showLogin(false);
+    await onRouteChange();
   } catch {
-    ME = null;
+    showLogin(true);
+    showView("dashboard"); // mostra layout, mas bloqueia API
   }
-
-  if (!ME) {
-    showOnly("login");
-    $("#btnLogout").style.display = "none";
-    $("#userChip").style.display = "none";
-    return;
-  }
-
-  $("#btnLogout").style.display = "";
-  $("#userChip").style.display = "";
-
-  showOnly("dashboard");
-  setActiveNav("dashboard");
-  await reloadAll();
-  renderBooks();
-  renderPeople();
-  renderLoans();
-  renderBackups();
-  renderUsers();
-  renderLogs();
-}
-
-boot();
+});

@@ -8,6 +8,14 @@ import { fileURLToPath } from "url";
 import { db, DB_FILE, nowIso, logAction } from "./db.js";
 
 const app = express();
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "LIB_ADMIN_TOKEN_123"; // troque no .env para algo forte
+
+function requireAdminToken(req, res, next) {
+  const token = req.header("x-admin-token") || req.query.token || req.body?.token;
+  if (!token || token !== ADMIN_TOKEN) return res.status(403).json({ error: "INVALID_ADMIN_TOKEN" });
+  next();
+}
+
 const PORT = 3000;
 
 const __filename = fileURLToPath(import.meta.url);
@@ -192,12 +200,76 @@ app.delete("/api/users/:id", requireAdmin, (req, res) => {
   }
 });
 
+// ===== Admin Panel (Token Protected) =====
+app.get("/api/admin/ping", requireAdminToken, (req, res) => {
+  res.json({ ok: true });
+});
+
+app.get("/api/admin/users", requireAdminToken, (req, res) => {
+  const rows = db.prepare("SELECT id, username, role, created_at FROM users ORDER BY id DESC").all();
+  res.json(rows);
+});
+
+app.post("/api/admin/users", requireAdminToken, async (req, res) => {
+  const { username, password, role } = req.body ?? {};
+  if (!username || !password) return res.status(400).json({ error: "MISSING_FIELDS" });
+
+  const hash = await bcrypt.hash(password, 10);
+  try {
+    const info = db.prepare("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)").run(
+      username.trim(),
+      hash,
+      role === "staff" ? "staff" : "admin"
+    );
+    res.json({ ok: true, id: info.lastInsertRowid });
+  } catch (e) {
+    return res.status(400).json({ error: e.code || "CREATE_FAILED", details: String(e.message || e) });
+  }
+});
+
+app.put("/api/admin/users/:id", requireAdminToken, async (req, res) => {
+  const id = Number(req.params.id);
+  const { username, password, role } = req.body ?? {};
+
+  const u = db.prepare("SELECT id, username, role FROM users WHERE id = ?").get(id);
+  if (!u) return res.status(404).json({ error: "USER_NOT_FOUND" });
+
+  try {
+    if (username && username.trim() && username.trim() !== u.username) {
+      db.prepare("UPDATE users SET username = ? WHERE id = ?").run(username.trim(), id);
+    }
+    if (role) {
+      db.prepare("UPDATE users SET role = ? WHERE id = ?").run(role === "staff" ? "staff" : "admin", id);
+    }
+    if (password && String(password).length >= 4) {
+      const hash = await bcrypt.hash(password, 10);
+      db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hash, id);
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    return res.status(400).json({ error: e.code || "UPDATE_FAILED", details: String(e.message || e) });
+  }
+});
+
+app.delete("/api/admin/users/:id", requireAdminToken, (req, res) => {
+  const id = Number(req.params.id);
+  const u = db.prepare("SELECT id, username FROM users WHERE id = ?").get(id);
+  if (!u) return res.status(404).json({ error: "USER_NOT_FOUND" });
+
+  try {
+    db.prepare("DELETE FROM users WHERE id = ?").run(id);
+    res.json({ ok: true });
+  } catch (e) {
+    return res.status(400).json({ error: e.code || "DELETE_FAILED", details: String(e.message || e) });
+  }
+});
+
 // ===== People =====
 app.get("/api/people", requireAuth, (req, res) => {
   const q = (req.query.q ?? "").toString().trim();
   const rows = q
-    ? db.prepare("SELECT * FROM people WHERE name LIKE ? ORDER BY name LIMIT 200").all(`%${q}%`)
-    : db.prepare("SELECT * FROM people ORDER BY created_at DESC LIMIT 200").all();
+    ? db.prepare("SELECT * FROM people WHERE deleted_at IS NULL AND name LIKE ? ORDER BY name LIMIT 200").all(`%${q}%`)
+    : db.prepare("SELECT * FROM people WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 200").all();
   res.json(rows);
 });
 
@@ -230,10 +302,29 @@ app.post("/api/people", requireAuth, (req, res) => {
   }
 });
 
+
+app.delete("/api/people/:id", requireAuth, (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const person = db.prepare("SELECT * FROM people WHERE id = ?").get(id);
+    if (!person) return res.status(404).json({ error: "PERSON_NOT_FOUND" });
+
+    // Soft delete: mantém histórico de empréstimos
+    db.prepare("UPDATE people SET deleted_at = datetime('now') WHERE id = ?").run(id);
+
+    logAction({ user_id: req.session.user.id, action: "DELETE", entity: "person", entity_id: id, details: `name=${person.name}` });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+});
+
+
 // ===== Books =====
 app.get("/api/books", requireAuth, (req, res) => {
   const q = (req.query.q ?? "").toString().trim();
-  const where = [];
+  const where = ["deleted_at IS NULL"];
   const params = [];
   if (q) { where.push("(title LIKE ? OR author LIKE ?)"); params.push(`%${q}%`, `%${q}%`); }
 
@@ -291,15 +382,14 @@ app.delete("/api/books/:id", requireAuth, (req, res) => {
     const book = db.prepare("SELECT * FROM books WHERE id = ?").get(id);
     if (!book) return res.status(404).json({ error: "BOOK_NOT_FOUND" });
 
-    const used = db.prepare("SELECT COUNT(*) as c FROM loan_items WHERE book_id = ?").get(id).c;
-    if (used > 0) return res.status(400).json({ error: "BOOK_HAS_LOANS_HISTORY" });
+    // Soft delete: mantém histórico de empréstimos
+    db.prepare("UPDATE books SET deleted_at = datetime('now') WHERE id = ?").run(id);
 
-    db.prepare("DELETE FROM books WHERE id = ?").run(id);
-    logAction({ user_id: req.session.user.id, action: "DELETE", entity: "books", entity_id: id, details: book.title });
-
+    logAction({ user_id: req.session.user.id, action: "DELETE", entity: "book", entity_id: id, details: `title=${book.title}` });
     res.json({ ok: true });
   } catch (e) {
-    return res.status(400).json({ error: e.code || "DELETE_FAILED", details: String(e.message || e) });
+    console.error(e);
+    res.status(500).json({ error: "SERVER_ERROR" });
   }
 });
 
@@ -384,9 +474,9 @@ app.get("/api/loans", requireAuth, (req, res) => {
   if (overdue === "1") where.push("l.status='LOANED' AND l.due_date IS NOT NULL AND l.due_date < datetime('now')");
 
   const sql = `
-    SELECT l.*, p.name as person_name, u.username as user_username, u.role as user_role
+    SELECT l.*, COALESCE(p.name, '[Leitor removido]') as person_name, u.username as user_username, u.role as user_role
     FROM loans l
-    JOIN people p ON p.id = l.person_id
+    LEFT JOIN people p ON p.id = l.person_id
     JOIN users u ON u.id = l.user_id
     ${where.length ? "WHERE " + where.join(" AND ") : ""}
     ORDER BY l.loan_date DESC
@@ -395,9 +485,9 @@ app.get("/api/loans", requireAuth, (req, res) => {
 
   const rows = db.prepare(sql).all(...params);
   const getItems = db.prepare(`
-    SELECT li.*, b.title, b.author
+    SELECT li.*, COALESCE(b.title, '[Livro removido]') as title, b.author
     FROM loan_items li
-    JOIN books b ON b.id = li.book_id
+    LEFT JOIN books b ON b.id = li.book_id
     WHERE li.loan_id = ?
   `);
 
@@ -565,9 +655,9 @@ app.get("/api/reports/people.csv", requireAuth, (req, res) => {
 
 app.get("/api/reports/loans.csv", requireAuth, (req, res) => {
   const rows = db.prepare(`
-    SELECT l.*, p.name as person_name, u.username as user_username
+    SELECT l.*, COALESCE(p.name, '[Leitor removido]') as person_name, u.username as user_username
     FROM loans l
-    JOIN people p ON p.id = l.person_id
+    LEFT JOIN people p ON p.id = l.person_id
     JOIN users u ON u.id = l.user_id
     ORDER BY l.loan_date DESC
   `).all();
@@ -580,9 +670,9 @@ app.get("/api/reports/loans.csv", requireAuth, (req, res) => {
 
 app.get("/api/reports/overdue.csv", requireAuth, (req, res) => {
   const rows = db.prepare(`
-    SELECT l.*, p.name as person_name, u.username as user_username
+    SELECT l.*, COALESCE(p.name, '[Leitor removido]') as person_name, u.username as user_username
     FROM loans l
-    JOIN people p ON p.id = l.person_id
+    LEFT JOIN people p ON p.id = l.person_id
     JOIN users u ON u.id = l.user_id
     WHERE l.status='LOANED' AND l.due_date IS NOT NULL AND l.due_date < datetime('now')
     ORDER BY l.due_date ASC

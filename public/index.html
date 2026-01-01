@@ -1,409 +1,342 @@
-<!doctype html>
-<html lang="pt-BR" data-theme="dark">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Biblioteca Offline</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Biblioteca</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="shell">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <div class="brand-logo">📚</div>
-        <div class="brand-text">
-          <div class="brand-title">Biblioteca</div>
-          <div class="brand-sub">Painel Offline</div>
+
+  <!-- Login Overlay -->
+  <div id="loginOverlay" class="login-overlay" style="display:none;">
+    <div class="login-card">
+      <h2>Entrar</h2>
+      <p>Use um usuário do sistema para acessar o sistema.</p>
+
+      <form id="loginForm" class="login-form">
+        <label for="loginUser">Usuário</label>
+        <input id="loginUser" autocomplete="username" required />
+
+        <label for="loginPass">Senha</label>
+        <input id="loginPass" type="password" autocomplete="current-password" required />
+
+        <button type="submit" class="btn-primary">Entrar</button>
+
+        <p id="loginError" class="login-error"></p>
+
+        <div class="login-hint">
+          <div><b>admin</b> / admin123</div>
+          <div><b>bibliotecario</b> / staff123</div>
         </div>
+      </form>
+    </div>
+  </div>
+
+
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon">📚</div>
+        <span class="logo-text">Sistema de Biblioteca</span>
       </div>
-
-      <nav class="nav">
-        <button class="nav-item is-active" data-nav="dashboard">📊 Dashboard</button>
-        <button class="nav-item" data-nav="books">📘 Livros</button>
-        <button class="nav-item" data-nav="people">👤 Pessoas</button>
-        <button class="nav-item" data-nav="loans">🔁 Empréstimos</button>
-        <button class="nav-item" data-nav="reports">📄 Relatórios</button>
-        <button class="nav-item" data-nav="settings">⚙️ Configurações</button>
-        <button class="nav-item admin-only" data-nav="users" style="display:none;">👥 Usuários</button>
-        <button class="nav-item" data-nav="logs">🧾 Logs</button>
+      <nav class="sidebar-nav">
+        <a href="#/dashboard" class="nav-item active" data-route="dashboard">
+          <span class="nav-icon">🏠</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="#/books" class="nav-item" data-route="books">
+          <span class="nav-icon">📖</span>
+          <span>Livros</span>
+        </a>
+        <a href="#/readers" class="nav-item" data-route="readers">
+          <span class="nav-icon">👥</span>
+          <span>Leitores</span>
+        </a>
+        <a href="#/loans" class="nav-item" data-route="loans">
+          <span class="nav-icon">🔄</span>
+          <span>Empréstimos</span>
+        </a>
+        <a href="#/admin" class="nav-item" data-route="admin">
+          <span class="nav-icon">🛡️</span>
+          <span>Admin</span>
+        </a>
       </nav>
-
-      <div class="sidebar-foot">
-        <div class="pill"><span class="dot"></span>Offline</div>
-        <div class="small muted">Abra em <b>localhost:3000</b></div>
+      <div class="sidebar-footer">
+        <button class="logout-btn">
+          <span class="nav-icon">🚪</span>
+          <span>Sair</span>
+        </button>
       </div>
     </aside>
 
-    <main class="main">
+    <!-- Main Content -->
+    <div class="main-wrapper">
+      <!-- Topbar -->
       <header class="topbar">
-        <div class="topbar-left">
-          <button class="icon-btn" id="btnHamburger" aria-label="Menu">☰</button>
-          <div class="page-title">
-            <div class="h1" id="pageTitle">Dashboard</div>
-            <div class="muted small" id="pageSubtitle">Visão geral do sistema</div>
-          </div>
-        </div>
-
-        <div class="topbar-right">
-          <button class="icon-btn" id="btnTheme" title="Tema">🌓</button>
-          <button class="icon-btn" id="btnOverdueTop" title="Atrasados">⏱</button>
-
-          <div class="user-chip" id="userChip">
-            <div class="avatar">A</div>
-            <div class="user-meta">
-              <div class="user-name" id="userName">admin</div>
-              <div class="muted small" id="userRole">admin</div>
-            </div>
-          </div>
-
-          <button id="btnLogout" class="btn danger">Sair</button>
+        <h1>Sistema de Biblioteca</h1>
+        <div class="user-info">
+          <span id="userName">Bem-vindo!</span>
+          <button class="btn-outline">Sair</button>
         </div>
       </header>
 
-      <section class="content">
-        <!-- LOGIN -->
-        <section class="card auth" id="viewLogin">
-          <div class="auth-hero">
-            <div class="auth-icon">🔐</div>
-            <div>
-              <div class="auth-title">Login</div>
-              <div class="muted">Admin ou Bibliotecário</div>
+      <!-- Dashboard Content -->
+      <main class="content">
+        <section id="view-dashboard" class="view active">
+        <!-- Stats Cards -->
+        <section class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon blue">📚</div>
+            <div class="stat-content">
+              <p class="stat-label">Total de Livros</p>
+              <p class="stat-value blue" id="totalBooks">--</p>
             </div>
           </div>
-
-          <form id="loginForm" class="form">
-            <div class="grid2">
-              <label>Usuário
-                <input name="username" placeholder="admin ou bibliotecario" autocomplete="username" required />
-              </label>
-              <label>Senha
-                <input name="password" type="password" placeholder="admin123" autocomplete="current-password" required />
-              </label>
+          <div class="stat-card">
+            <div class="stat-icon blue">👥</div>
+            <div class="stat-content">
+              <p class="stat-label">Total de Leitores</p>
+              <p class="stat-value blue" id="totalReaders">--</p>
             </div>
-
-            <button class="btn primary w100" type="submit">Entrar →</button>
-            <p class="hint">
-              Padrões: <b>admin/admin123</b> (admin) • <b>bibliotecario/staff123</b> (staff)
-            </p>
-          </form>
-        </section>
-
-        <!-- DASH -->
-        <section id="viewDash" style="display:none;">
-          <div class="kpis">
-            <div class="kpi"><div class="kpi-title">Livros (Total)</div><div class="kpi-value" id="kBooks">0</div></div>
-            <div class="kpi"><div class="kpi-title">Disponíveis</div><div class="kpi-value" id="kAvail">0</div></div>
-            <div class="kpi"><div class="kpi-title">Empréstimos Ativos</div><div class="kpi-value" id="kLoans">0</div></div>
-            <div class="kpi"><div class="kpi-title">Atrasados</div><div class="kpi-value" id="kOverdue">0</div></div>
           </div>
-
-          <div class="grid2 gap16">
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <div class="card-title">Gráfico do Estoque</div>
-                  <div class="muted small">Total x Disponível x Emprestado</div>
-                </div>
-                <button class="btn" id="btnPrintDash">🖨️ PDF</button>
-              </div>
-              <canvas id="chartBooks" height="160"></canvas>
+          <div class="stat-card">
+            <div class="stat-icon green">🔄</div>
+            <div class="stat-content">
+              <p class="stat-label">Livros Emprestados</p>
+              <p class="stat-value green" id="booksLoaned">--</p>
             </div>
-
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <div class="card-title">Atalhos</div>
-                  <div class="muted small">Ações rápidas</div>
-                </div>
-              </div>
-
-              <div class="quick">
-                <button class="quick-btn" data-go="books">＋ Adicionar Livro</button>
-                <button class="quick-btn" data-go="people">＋ Cadastrar Pessoa</button>
-                <button class="quick-btn" id="btnOpenLoanModal">⇄ Novo Empréstimo</button>
-                <button class="quick-btn warn" id="btnOverdueDash">⏱ Ver Atrasados</button>
-              </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">⚠️</div>
+            <div class="stat-content">
+              <p class="stat-label">Em Atraso</p>
+              <p class="stat-value red" id="booksOverdue">--</p>
             </div>
           </div>
         </section>
 
-        <!-- BOOKS -->
-        <section class="panel" id="viewBooks" style="display:none;">
-          <div class="panel-head">
-            <div><div class="h2">Livros</div><div class="muted small">Cadastre, ajuste e remova.</div></div>
-            <div class="panel-actions">
-              <div class="search"><span>🔎</span><input id="qBooks" placeholder="Buscar por título ou autor..." /></div>
-              <button class="btn" id="btnReloadBooks">Atualizar</button>
-              <button class="btn" id="btnPrintBooks">🖨️ PDF</button>
+        <!-- Tables Section -->
+        <section class="tables-grid">
+          <!-- Recent Loans -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Últimos Empréstimos</h3>
+            </div>
+            <div class="card-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Leitor</th>
+                    <th>Livro</th>
+                    <th>Data</th>
+                  </tr>
+                </thead>
+                <tbody id="loansTableBody">
+                  <tr><td colspan="3" class="loading">Carregando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="card-footer">
+              <button id="btnGoLoans" class="btn-primary">Ver Todos →</button>
             </div>
           </div>
 
-          <div class="grid2 gap16">
-            <form id="bookForm" class="card form">
-              <div class="card-title">Novo Livro</div>
-              <div class="grid2">
-                <label>Título <input name="title" required /></label>
-                <label>Autor <input name="author" /></label>
-                <label>Categoria <input name="category" /></label>
-                <label>Seção <input name="section" /></label>
-                <label>Prateleira <input name="shelf" placeholder="Prateleira 01" /></label>
-                <label>Quantidade total <input name="total_qty" type="number" min="0" value="1" /></label>
-              </div>
-              <button class="btn primary w100" type="submit">Adicionar Livro</button>
-              <p class="hint">Remoção só se nunca teve empréstimo.</p>
-            </form>
-
-            <div class="card">
-              <div class="card-title">Lista de Livros</div>
-              <div id="booksList" class="list"></div>
+          <!-- Recent Readers -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Leitores Recentes</h3>
             </div>
-          </div>
-        </section>
-
-        <!-- PEOPLE -->
-        <section class="panel" id="viewPeople" style="display:none;">
-          <div class="panel-head">
-            <div><div class="h2">Pessoas</div><div class="muted small">Cadastro e remoção segura.</div></div>
-            <div class="panel-actions">
-              <div class="search"><span>🔎</span><input id="qPeople" placeholder="Buscar pessoa..." /></div>
-              <button class="btn" id="btnReloadPeople">Atualizar</button>
-              <button class="btn" id="btnPrintPeople">🖨️ PDF</button>
+            <div class="card-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                  </tr>
+                </thead>
+                <tbody id="readersTableBody">
+                  <tr><td colspan="2" class="loading">Carregando...</td></tr>
+                </tbody>
+              </table>
             </div>
-          </div>
-
-          <div class="grid2 gap16">
-            <form id="peopleForm" class="card form">
-              <div class="card-title">Nova Pessoa</div>
-              <div class="grid2">
-                <label>Nome <input name="name" required /></label>
-                <label>Telefone <input name="phone" /></label>
-                <label>Email <input name="email" /></label>
-              </div>
-              <button class="btn primary w100" type="submit">Cadastrar Pessoa</button>
-              <p class="hint">Remoção só se nunca teve empréstimo.</p>
-            </form>
-
-            <div class="card">
-              <div class="card-title">Lista de Pessoas</div>
-              <div id="peopleList" class="list"></div>
+            <div class="card-footer">
+              <button id="btnGoReaders" class="btn-primary">Gerenciar Leitores →</button>
             </div>
           </div>
         </section>
 
-        <!-- LOANS -->
-        <section class="panel" id="viewLoans" style="display:none;">
-          <div class="panel-head">
-            <div><div class="h2">Empréstimos</div><div class="muted small">Devolução parcial/total + renovação.</div></div>
-            <div class="panel-actions">
-              <button class="btn primary" id="btnOpenLoanModal2">＋ Novo Empréstimo</button>
-              <div class="search"><span>🔎</span><input id="qLoans" placeholder="Buscar por nome..." /></div>
-              <button class="btn" id="btnReloadLoans">Atualizar</button>
-              <button class="btn warn" id="btnOverdue">Atrasados</button>
-              <button class="btn" id="btnPrintLoans">🖨️ PDF</button>
+        <!-- Chart Section -->
+        <section class="chart-section">
+          <div class="card">
+            <div class="card-header">
+              <h3>Estatísticas de Empréstimos</h3>
+            </div>
+            <div class="card-body">
+              <div class="chart-legend">
+                <span class="legend-item"><span class="legend-color blue"></span> Emprestados</span>
+                <span class="legend-item"><span class="legend-color green"></span> Devolvidos</span>
+              </div>
+              <div class="chart-container" id="chartContainer">
+                <p class="loading">Carregando gráfico...</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        </section>
+
+        <section id="view-books" class="view">
+          <div class="page-header">
+            <h2>Livros</h2>
+            <div class="page-actions">
+              <input id="booksSearch" class="input" placeholder="Buscar por título ou autor..." />
+              <button id="btnAddBook" class="btn-primary">+ Adicionar Livro</button>
             </div>
           </div>
 
           <div class="card">
-            <div class="card-title">Lista de Empréstimos</div>
-            <div id="loansList" class="list"></div>
-          </div>
-        </section>
-
-        <!-- REPORTS -->
-        <section class="panel" id="viewReports" style="display:none;">
-          <div class="panel-head">
-            <div><div class="h2">Relatórios</div><div class="muted small">CSV + PDF.</div></div>
-            <div class="panel-actions">
-              <button class="btn" id="btnPrintReports">🖨️ PDF</button>
-            </div>
-          </div>
-
-          <div class="grid2 gap16">
-            <div class="card">
-              <div class="card-title">CSV (Excel)</div>
-              <div class="list">
-                <a class="btn w100" href="/api/reports/books.csv" target="_blank">⬇️ Livros</a>
-                <a class="btn w100" href="/api/reports/people.csv" target="_blank">⬇️ Pessoas</a>
-                <a class="btn w100" href="/api/reports/loans.csv" target="_blank">⬇️ Empréstimos</a>
-                <a class="btn w100 warn" href="/api/reports/overdue.csv" target="_blank">⬇️ Atrasados</a>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-title">PDF</div>
-              <div class="muted small">Use 🖨️ ou Ctrl+P → “Salvar como PDF”.</div>
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Título</th>
+                    <th>Autor</th>
+                    <th>Categoria</th>
+                    <th>Disponível</th>
+                    <th>Total</th>
+                    <th style="width: 160px;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="booksTableBody"></tbody>
+              </table>
             </div>
           </div>
         </section>
 
-        <!-- SETTINGS -->
-        <section class="panel" id="viewSettings" style="display:none;">
-          <div class="panel-head">
-            <div><div class="h2">Configurações</div><div class="muted small">Senha + backups.</div></div>
-          </div>
-
-          <div class="grid2 gap16">
-            <form id="pwdForm" class="card form">
-              <div class="card-title">Trocar minha senha</div>
-              <label>Senha atual <input name="current_password" type="password" required /></label>
-              <label>Nova senha (mín 6) <input name="new_password" type="password" required /></label>
-              <button class="btn primary w100" type="submit">Atualizar senha</button>
-            </form>
-
-            <div class="card form">
-              <div class="card-title">Backups</div>
-              <button class="btn w100" id="btnBackupNow" type="button">💾 Fazer backup agora (admin)</button>
-
-              <div class="inner" style="margin-top:12px;">
-                <div class="muted small" style="margin-bottom:10px;">Lista de backups (admin)</div>
-                <div id="backupList" class="list"></div>
-              </div>
-
-              <div class="inner" style="margin-top:12px;">
-                <div class="muted small" style="margin-bottom:10px;">
-                  Restore: salvará como <b>database.sqlite.restored</b> (depois renomeie).
-                </div>
-                <input id="restoreFile" type="file" accept=".sqlite,.db,.sqlite3" />
-                <button class="btn warn w100" id="btnRestore" type="button">Restaurar backup (admin)</button>
-              </div>
+        <section id="view-readers" class="view">
+          <div class="page-header">
+            <h2>Leitores</h2>
+            <div class="page-actions">
+              <input id="readersSearch" class="input" placeholder="Buscar por nome..." />
+              <button id="btnAddReader" class="btn-primary">+ Adicionar Leitor</button>
             </div>
           </div>
-        </section>
 
-        <!-- USERS -->
-        <section class="panel" id="viewUsers" style="display:none;">
-          <div class="panel-head">
-            <div><div class="h2">Usuários</div><div class="muted small">Somente Admin.</div></div>
-            <button class="btn" id="btnReloadUsers">Atualizar</button>
-          </div>
-
-          <div class="grid2 gap16">
-            <form id="userCreateForm" class="card form">
-              <div class="card-title">Criar usuário</div>
-              <label>Username <input name="username" required /></label>
-              <label>Senha (mín 6) <input name="password" type="password" required /></label>
-              <label>Role
-                <select name="role">
-                  <option value="staff">staff (bibliotecário)</option>
-                  <option value="admin">admin</option>
-                </select>
-              </label>
-              <button class="btn primary w100" type="submit">Criar</button>
-              <p class="hint">Não é permitido deletar você mesmo.</p>
-            </form>
-
-            <div class="card">
-              <div class="card-title">Lista</div>
-              <div id="usersList" class="list"></div>
-            </div>
-          </div>
-        </section>
-
-        <!-- LOGS -->
-        <section class="panel" id="viewLogs" style="display:none;">
-          <div class="panel-head">
-            <div><div class="h2">Logs</div><div class="muted small">Auditoria do sistema.</div></div>
-            <button class="btn" id="btnReloadLogs">Atualizar</button>
-          </div>
           <div class="card">
-            <div id="logsList" class="list"></div>
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Telefone</th>
+                    <th style="width: 140px;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="readersFullTableBody"></tbody>
+              </table>
+            </div>
           </div>
         </section>
-      </section>
 
-      <!-- Modals -->
-      <dialog class="modal" id="loanModal">
-        <form method="dialog" class="modal-box">
-          <div class="modal-head">
-            <div>
-              <div class="modal-title">Novo Empréstimo</div>
-              <div class="muted small">Selecione pessoa e livros</div>
+        <section id="view-loans" class="view">
+          <div class="page-header">
+            <h2>Empréstimos</h2>
+            <div class="page-actions">
+              <input id="loansSearch" class="input" placeholder="Buscar por leitor..." />
+              <select id="loansFilter" class="input">
+                <option value="">Todos</option>
+                <option value="LOANED">Ativos</option>
+                <option value="RETURNED">Devolvidos</option>
+              </select>
+              <button id="btnAddLoan" class="btn-primary">+ Novo Empréstimo</button>
             </div>
-            <button class="icon-btn" value="cancel">✕</button>
           </div>
 
-          <div class="grid2">
-            <label>Pessoa
-              <input id="personSearch" placeholder="Digite o nome..." autocomplete="off" />
-              <input type="hidden" id="personIdHidden" />
-              <div class="acbox" id="acPeople"></div>
-            </label>
-
-            <label>Prazo (YYYY-MM-DD HH:MM:SS)
-              <input id="loanDue" placeholder="2026-01-15 18:00:00" />
-            </label>
-          </div>
-
-          <div class="inner">
-            <div class="inner-head">
-              <div class="card-title">Itens</div>
-              <button class="btn" type="button" id="btnAddItem">+ adicionar</button>
+          <div class="card">
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Leitor</th>
+                    <th>Status</th>
+                    <th>Data</th>
+                    <th>Vencimento</th>
+                    <th>Itens</th>
+                    <th style="width: 140px;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="loansFullTableBody"></tbody>
+              </table>
             </div>
-            <div id="loanItems"></div>
           </div>
+        </section>
 
-          <label>Observação
-            <input id="loanNotes" placeholder="Ex: devolver em 7 dias" />
-          </label>
-
-          <div class="modal-actions">
-            <button class="btn" value="cancel">Cancelar</button>
-            <button class="btn primary" id="btnSubmitLoan" type="button">Registrar</button>
-          </div>
-        </form>
-      </dialog>
-
-      <dialog class="modal" id="renewModal">
-        <form method="dialog" class="modal-box">
-          <div class="modal-head">
-            <div>
-              <div class="modal-title">Renovar</div>
-              <div class="muted small">Nova data de devolução</div>
+      
+        <section id="view-admin" class="view">
+          <div class="page-header">
+            <h2>Administração</h2>
+            <div class="page-actions">
+              <button id="btnAdminToken" class="btn-outline">Definir Token</button>
+              <button id="btnAdminRefresh" class="btn-primary">Recarregar</button>
             </div>
-            <button class="icon-btn" value="cancel">✕</button>
           </div>
 
-          <input type="hidden" id="renewLoanId" />
-          <label>Novo prazo (YYYY-MM-DD HH:MM:SS)
-            <input id="renewDue" placeholder="2026-01-20 18:00:00" />
-          </label>
-
-          <div class="modal-actions">
-            <button class="btn" value="cancel">Cancelar</button>
-            <button class="btn primary" id="btnRenewConfirm" type="button">Salvar</button>
+          <div class="card">
+            <p class="loading" id="adminStatus">Informe o token para acessar.</p>
           </div>
-        </form>
-      </dialog>
 
-      <dialog class="modal" id="returnItemModal">
-        <form method="dialog" class="modal-box">
-          <div class="modal-head">
-            <div>
-              <div class="modal-title">Devolver Item</div>
-              <div class="muted small" id="returnItemHint">Quantidade</div>
+          <div class="card" style="margin-top: 14px;">
+            <div class="page-header" style="margin-bottom: 10px;">
+              <h3 style="margin:0;">Usuários</h3>
+              <button id="btnAdminNewUser" class="btn-primary">+ Criar Usuário</button>
             </div>
-            <button class="icon-btn" value="cancel">✕</button>
+
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Usuário</th>
+                    <th>Role</th>
+                    <th>Criado em</th>
+                    <th style="width: 240px;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="adminUsersBody"></tbody>
+              </table>
+            </div>
           </div>
+        </section>
 
-          <input type="hidden" id="riLoanId" />
-          <input type="hidden" id="riItemId" />
-          <input type="hidden" id="riMax" />
-
-          <label>Quantidade
-            <input id="riQty" type="number" min="1" value="1" />
-          </label>
-
-          <div class="modal-actions">
-            <button class="btn" value="cancel">Cancelar</button>
-            <button class="btn primary" id="btnReturnItemConfirm" type="button">Devolver</button>
-          </div>
-        </form>
-      </dialog>
-
-      <div id="toast" class="toast"></div>
-      <div class="backdrop" id="backdrop"></div>
-    </main>
+</main>
+    </div>
   </div>
 
   <script src="app.js"></script>
+
+  <!-- App Modal -->
+  <div id="appModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalTitle" class="modal-title">Título</h3>
+          <p id="modalSubtitle" class="modal-subtitle">Descrição</p>
+        </div>
+        <button id="modalClose" class="icon-btn" aria-label="Fechar">✕</button>
+      </div>
+
+      <div id="modalBody" class="modal-body"></div>
+
+      <div class="modal-footer">
+        <button id="modalCancel" class="btn-outline">Cancelar</button>
+        <button id="modalConfirm" class="btn-primary">Salvar</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

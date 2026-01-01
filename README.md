@@ -1,52 +1,52 @@
-📚 Sistema de Biblioteca – Gerenciamento Offline
+📚 Sistema de Biblioteca – Gestão de Empréstimos
 
-Sistema completo de gerenciamento de biblioteca desenvolvido em Node.js, focado em simplicidade, organização e funcionamento totalmente offline.
-Ideal para bibliotecas escolares, comunitárias ou projetos educacionais.
+Sistema completo de gerenciamento de biblioteca desenvolvido em Node.js, com controle de usuários, livros e empréstimos.
+Projeto criado com foco em organização, clareza e boas práticas, simulando um sistema real de uso administrativo.
 
 🚀 Funcionalidades
-📘 Gestão de Livros
+👤 Usuários
 
-Cadastro, edição e remoção de livros
+Cadastro de usuários
 
-Controle automático de quantidade disponível
+Exclusão de usuários
 
-Busca por título ou categoria
+Controle de acesso via login
 
-👤 Gestão de Usuários
+Painel administrativo protegido por token
 
-Cadastro de leitores
+📚 Livros
 
-Validação de e-mails (evita duplicações)
+Cadastro de livros
 
-Histórico completo de empréstimos
+Controle de quantidade disponível
 
-🔄 Empréstimos
+Exclusão de livros
 
-Registro de empréstimos e devoluções
+Atualização automática do estoque
 
-Controle automático de disponibilidade
+🔁 Empréstimos
 
-Bloqueio de remoção quando há empréstimos ativos
+Registro de empréstimos
+
+Devolução de livros
+
+Atualização automática do estoque
+
+Histórico de empréstimos
+
+Controle de status (emprestado / devolvido)
 
 🔐 Segurança
 
-Sistema de login
+Autenticação por login
 
-Controle de acesso
+Área administrativa protegida por token
 
-Validações no backend
+Rotas protegidas no backend
 
-Proteção contra exclusões indevidas
+Separação entre usuários comuns e administradores
 
-🖥️ Interface
-
-Interface simples e intuitiva
-
-Totalmente responsiva
-
-Funciona 100% offline
-
-🛠️ Tecnologias Utilizadas
+🖥️ Tecnologias Utilizadas
 
 Node.js
 
@@ -58,62 +58,83 @@ HTML5
 
 CSS3
 
-JavaScript
+JavaScript (Vanilla)
 
-Git & GitHub
+Fetch API
+
+Git / GitHub
 
 📂 Estrutura do Projeto
-biblioteca-offline/
+Sistema-Biblioteca/
 │
 ├── public/
 │   ├── index.html
 │   ├── styles.css
-│   └── app.js
+│   ├── app.js
 │
-├── db.js
 ├── server.js
+├── db.js
 ├── package.json
-├── README.md
-└── .gitignore
+└── README.md
 
-▶️ Como Executar o Projeto
-1️⃣ Instale as dependências
+▶️ Como rodar o projeto localmente
+1️⃣ Clone o repositório
+git clone https://github.com/seu-usuario/Sistema-Biblioteca.git
+
+2️⃣ Entre na pasta
+cd Sistema-Biblioteca
+
+3️⃣ Instale as dependências
 npm install
 
-2️⃣ Inicie o servidor
+4️⃣ Inicie o servidor
 npm start
 
-3️⃣ Acesse no navegador
+5️⃣ Acesse no navegador
 http://localhost:3000
 
-👤 Usuário Padrão
-Usuário	Senha
-admin	admin123
+🔐 Acesso administrativo
 
-(Os dados podem ser alterados diretamente no banco de dados)
+O sistema possui uma área administrativa protegida por token.
+
+Para acessar:
+
+Vá até a aba Admin
+
+Insira o token configurado no backend (ADMIN_TOKEN)
+
+Após validado, você poderá:
+
+Criar usuários
+
+Editar usuários
+
+Excluir usuários
 
 📌 Observações Importantes
 
-O sistema utiliza SQLite, ideal para projetos locais e educacionais
+O banco de dados é criado automaticamente ao iniciar o projeto.
 
-Funciona offline, sem necessidade de internet
+O arquivo .db não deve ser versionado no GitHub.
 
+O sistema foi pensado para funcionar localmente, mas pode ser facilmente adaptado para produção.
 
-🚀 Próximas Melhorias (Roadmap)
+🚀 Melhorias Futuras (Roadmap)
 
-📊 Relatórios em PDF ou Excel
+Sistema de permissões por perfil (admin / operador)
 
-⏱️ Controle de atrasos e multas
+Histórico de atividades (logs)
 
-👥 Níveis de acesso (admin / funcionário)
+Dashboard com métricas
 
-🔐 Autenticação mais robusta
+Paginação e filtros avançados
 
-📱 Versão desktop com Electron
+Deploy em servidor (Render, Railway ou VPS)
 
 👨‍💻 Autor
 
 Vitor Dutra Melo
-Desenvolvedor Web | JavaScript | Node.js
+Desenvolvedor Full Stack
 
-📌 Projeto desenvolvido com foco em aprendizado, prática real e evolução profissional.
+📧 Contato: adicione seu email aqui
+🔗 GitHub: link do repositório

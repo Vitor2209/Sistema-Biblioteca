@@ -316,7 +316,7 @@ async function adjustBook(id, delta) {
 }
 
 async function deleteBook(id) {
-  if (!confirm("Tem certeza que deseja excluir este livro? (Só funciona se não houver histórico de empréstimos)")) return;
+  if (!confirm("Tem certeza que deseja excluir este livro?")) return;
   await api(`/api/books/${id}`, { method: "DELETE" });
   await loadBooks();
 }
@@ -878,3 +878,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     showView("dashboard"); // mostra layout, mas bloqueia API
   }
 });
+

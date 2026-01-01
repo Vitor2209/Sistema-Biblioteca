@@ -603,3 +603,37 @@ body {
   color: var(--text-secondary);
   font-size: 0.8rem;
 }
+
+
+/* ===== STICKY AÇÕES (somente nas tabelas com ações) ===== */
+.table-actions-sticky th:last-child,
+.table-actions-sticky td:last-child {
+  position: sticky;
+  right: 0;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(4px);
+  border-left: 1px solid rgba(255,255,255,0.12);
+}
+
+.table-actions-sticky th:last-child { z-index: 3; }
+.table-actions-sticky td:last-child { z-index: 2; }
+
+
+/* ===== TABELAS RESPONSIVAS (somente telas de listagem) ===== */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.table-responsive .table {
+  min-width: 900px;
+}
+
+.table-responsive .table th:last-child,
+.table-responsive .table td:last-child {
+  white-space: nowrap;
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .table-responsive .table { min-width: 760px; }
+}

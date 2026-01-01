@@ -1,140 +1,142 @@
-📚 Sistema de Biblioteca – Gestão de Empréstimos
+📚 Sistema de Biblioteca — Gestão Completa
+<p align="center"> <img src="https://img.shields.io/badge/Status-Em%20Desenvolvimento-yellow" /> <img src="https://img.shields.io/badge/Node.js-Backend-green" /> <img src="https://img.shields.io/badge/Frontend-HTML%20%7C%20CSS%20%7C%20JS-blue" /> <img src="https://img.shields.io/badge/Database-SQLite-lightgrey" /> </p>
 
-Sistema completo de gerenciamento de biblioteca desenvolvido em Node.js, com controle de usuários, livros e empréstimos.
-Projeto criado com foco em organização, clareza e boas práticas, simulando um sistema real de uso administrativo.
+Sistema completo para gerenciamento de biblioteca com controle de usuários, livros, empréstimos e painel administrativo.
 
-🚀 Funcionalidades
+✨ Visão Geral
+
+Este projeto simula um sistema real de biblioteca, com controle total de:
+
+usuários
+
+livros
+
+empréstimos
+
+devoluções
+
+permissões administrativas
+
+Tudo foi construído sem frameworks, apenas com Node.js, JavaScript puro e SQLite, focando em lógica, organização e boas práticas.
+
+🖥️ Demonstração (exemplo visual)
+
+(adicione prints aqui depois)
+
+📌 Tela inicial
+📌 Painel administrativo
+📌 Cadastro de livros
+📌 Controle de empréstimos
+
+⚙️ Funcionalidades
 👤 Usuários
 
-Cadastro de usuários
+Criar usuários
 
-Exclusão de usuários
+Excluir usuários
 
-Controle de acesso via login
+Controle por login
 
-Painel administrativo protegido por token
+Permissões administrativas
 
 📚 Livros
 
 Cadastro de livros
 
-Controle de quantidade disponível
+Controle de estoque
 
-Exclusão de livros
+Exclusão segura
 
-Atualização automática do estoque
+Atualização automática de quantidade
 
 🔁 Empréstimos
 
-Registro de empréstimos
+Registrar empréstimo
 
-Devolução de livros
+Devolver livro
 
-Atualização automática do estoque
+Controle automático de estoque
 
-Histórico de empréstimos
-
-Controle de status (emprestado / devolvido)
+Histórico de operações
 
 🔐 Segurança
 
-Autenticação por login
+Login com autenticação
 
 Área administrativa protegida por token
 
 Rotas protegidas no backend
 
-Separação entre usuários comuns e administradores
-
-🖥️ Tecnologias Utilizadas
-
-Node.js
-
-Express
-
-SQLite
-
-HTML5
-
-CSS3
-
-JavaScript (Vanilla)
-
-Fetch API
-
-Git / GitHub
-
-📂 Estrutura do Projeto
+🧠 Tecnologias Utilizadas
+Tecnologia	Uso
+Node.js	Backend
+Express	Servidor HTTP
+SQLite	Banco de dados
+HTML5	Estrutura
+CSS3	Estilização
+JavaScript	Lógica e interação
+Git / GitHub	Versionamento
+📁 Estrutura do Projeto
 Sistema-Biblioteca/
 │
 ├── public/
 │   ├── index.html
 │   ├── styles.css
-│   ├── app.js
+│   └── app.js
 │
 ├── server.js
 ├── db.js
 ├── package.json
 └── README.md
 
-▶️ Como rodar o projeto localmente
-1️⃣ Clone o repositório
+▶️ Como rodar o projeto
+# Clone o repositório
 git clone https://github.com/seu-usuario/Sistema-Biblioteca.git
 
-2️⃣ Entre na pasta
+# Entre na pasta
 cd Sistema-Biblioteca
 
-3️⃣ Instale as dependências
+# Instale as dependências
 npm install
 
-4️⃣ Inicie o servidor
+# Inicie o servidor
 npm start
 
-5️⃣ Acesse no navegador
+
+Acesse no navegador:
+
 http://localhost:3000
 
-🔐 Acesso administrativo
+🔐 Painel Administrativo
 
-O sistema possui uma área administrativa protegida por token.
-
-Para acessar:
-
-Vá até a aba Admin
-
-Insira o token configurado no backend (ADMIN_TOKEN)
-
-Após validado, você poderá:
+O sistema possui um painel administrativo protegido por token, onde é possível:
 
 Criar usuários
 
 Editar usuários
 
-Excluir usuários
+Remover usuários
 
-📌 Observações Importantes
+Gerenciar permissões
 
-O banco de dados é criado automaticamente ao iniciar o projeto.
+O token é configurado no backend e não deve ser exposto publicamente.
 
-O arquivo .db não deve ser versionado no GitHub.
+🚀 Próximas melhorias
 
-O sistema foi pensado para funcionar localmente, mas pode ser facilmente adaptado para produção.
+Autenticação JWT
 
-🚀 Melhorias Futuras (Roadmap)
+Controle de níveis de acesso
 
-Sistema de permissões por perfil (admin / operador)
+Dashboard com gráficos
 
-Histórico de atividades (logs)
+Histórico detalhado de ações
 
-Dashboard com métricas
-
-Paginação e filtros avançados
-
-Deploy em servidor (Render, Railway ou VPS)
+Deploy em produção (Render / Railway)
 
 👨‍💻 Autor
 
 Vitor Dutra Melo
 Desenvolvedor Full Stack
 
-📧 Contato: adicione seu email aqui
-🔗 GitHub: link do repositório
+📧 Email: adicione aqui
+🔗 GitHub: https://github.com/Vitor2209

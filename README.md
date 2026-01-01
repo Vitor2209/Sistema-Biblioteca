@@ -1,119 +1,142 @@
-📚 Sistema de Biblioteca – Gerenciamento Offline
+📚 Sistema de Biblioteca — Gestão Completa
+<p align="center"> <img src="https://img.shields.io/badge/Status-Em%20Desenvolvimento-yellow" /> <img src="https://img.shields.io/badge/Node.js-Backend-green" /> <img src="https://img.shields.io/badge/Frontend-HTML%20%7C%20CSS%20%7C%20JS-blue" /> <img src="https://img.shields.io/badge/Database-SQLite-lightgrey" /> </p>
 
-Sistema completo de gerenciamento de biblioteca desenvolvido em Node.js, focado em simplicidade, organização e funcionamento totalmente offline.
-Ideal para bibliotecas escolares, comunitárias ou projetos educacionais.
+Sistema completo para gerenciamento de biblioteca com controle de usuários, livros, empréstimos e painel administrativo.
 
-🚀 Funcionalidades
-📘 Gestão de Livros
+✨ Visão Geral
 
-Cadastro, edição e remoção de livros
+Este projeto simula um sistema real de biblioteca, com controle total de:
 
-Controle automático de quantidade disponível
+usuários
 
-Busca por título ou categoria
+livros
 
-👤 Gestão de Usuários
+empréstimos
 
-Cadastro de leitores
+devoluções
 
-Validação de e-mails (evita duplicações)
+permissões administrativas
 
-Histórico completo de empréstimos
+Tudo foi construído sem frameworks, apenas com Node.js, JavaScript puro e SQLite, focando em lógica, organização e boas práticas.
 
-🔄 Empréstimos
+🖥️ Demonstração (exemplo visual)
 
-Registro de empréstimos e devoluções
+(adicione prints aqui depois)
 
-Controle automático de disponibilidade
+📌 Tela inicial
+📌 Painel administrativo
+📌 Cadastro de livros
+📌 Controle de empréstimos
 
-Bloqueio de remoção quando há empréstimos ativos
+⚙️ Funcionalidades
+👤 Usuários
+
+Criar usuários
+
+Excluir usuários
+
+Controle por login
+
+Permissões administrativas
+
+📚 Livros
+
+Cadastro de livros
+
+Controle de estoque
+
+Exclusão segura
+
+Atualização automática de quantidade
+
+🔁 Empréstimos
+
+Registrar empréstimo
+
+Devolver livro
+
+Controle automático de estoque
+
+Histórico de operações
 
 🔐 Segurança
 
-Sistema de login
+Login com autenticação
 
-Controle de acesso
+Área administrativa protegida por token
 
-Validações no backend
+Rotas protegidas no backend
 
-Proteção contra exclusões indevidas
-
-🖥️ Interface
-
-Interface simples e intuitiva
-
-Totalmente responsiva
-
-Funciona 100% offline
-
-🛠️ Tecnologias Utilizadas
-
-Node.js
-
-Express
-
-SQLite
-
-HTML5
-
-CSS3
-
-JavaScript
-
-Git & GitHub
-
-📂 Estrutura do Projeto
-biblioteca-offline/
+🧠 Tecnologias Utilizadas
+Tecnologia	Uso
+Node.js	Backend
+Express	Servidor HTTP
+SQLite	Banco de dados
+HTML5	Estrutura
+CSS3	Estilização
+JavaScript	Lógica e interação
+Git / GitHub	Versionamento
+📁 Estrutura do Projeto
+Sistema-Biblioteca/
 │
 ├── public/
 │   ├── index.html
 │   ├── styles.css
 │   └── app.js
 │
-├── db.js
 ├── server.js
+├── db.js
 ├── package.json
-├── README.md
-└── .gitignore
+└── README.md
 
-▶️ Como Executar o Projeto
-1️⃣ Instale as dependências
+▶️ Como rodar o projeto
+# Clone o repositório
+git clone https://github.com/seu-usuario/Sistema-Biblioteca.git
+
+# Entre na pasta
+cd Sistema-Biblioteca
+
+# Instale as dependências
 npm install
 
-2️⃣ Inicie o servidor
+# Inicie o servidor
 npm start
 
-3️⃣ Acesse no navegador
+
+Acesse no navegador:
+
 http://localhost:3000
 
-👤 Usuário Padrão
-Usuário	Senha
-admin	admin123
+🔐 Painel Administrativo
 
-(Os dados podem ser alterados diretamente no banco de dados)
+O sistema possui um painel administrativo protegido por token, onde é possível:
 
-📌 Observações Importantes
+Criar usuários
 
-O sistema utiliza SQLite, ideal para projetos locais e educacionais
+Editar usuários
 
-Funciona offline, sem necessidade de internet
+Remover usuários
 
+Gerenciar permissões
 
-🚀 Próximas Melhorias (Roadmap)
+O token é configurado no backend e não deve ser exposto publicamente.
 
-📊 Relatórios em PDF ou Excel
+🚀 Próximas melhorias
 
-⏱️ Controle de atrasos e multas
+Autenticação JWT
 
-👥 Níveis de acesso (admin / funcionário)
+Controle de níveis de acesso
 
-🔐 Autenticação mais robusta
+Dashboard com gráficos
 
-📱 Versão desktop com Electron
+Histórico detalhado de ações
+
+Deploy em produção (Render / Railway)
 
 👨‍💻 Autor
 
 Vitor Dutra Melo
-Desenvolvedor Web | JavaScript | Node.js
+Desenvolvedor Full Stack
 
-📌 Projeto desenvolvido com foco em aprendizado, prática real e evolução profissional.
+📧 Email: adicione aqui
+🔗 GitHub: https://github.com/Vitor2209

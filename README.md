@@ -138,5 +138,5 @@ Deploy em produção (Render / Railway)
 Vitor Dutra Melo
 Desenvolvedor Full Stack
 
-📧 Email: adicione aqui
+📧 Email: vitordutra1125@gmail.com
 🔗 GitHub: https://github.com/Vitor2209

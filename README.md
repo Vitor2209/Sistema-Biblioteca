@@ -82,17 +82,28 @@ HTML5	Estrutura do frontend
 CSS3	Estilização
 JavaScript	Lógica e interação
 Git / GitHub	Versionamento
+
 📁 Estrutura do Projeto
+
 Sistema-Biblioteca/
+
 │
+
 ├── public/
+
 │   ├── index.html
+
 │   ├── styles.css
+
 │   └── app.js
+
 │
 ├── server.js
+
 ├── db.js
+
 ├── package.json
+
 └── README.md
 
 ▶️ Como Executar o Projeto
